@@ -1,0 +1,78 @@
+2013-05-05	Timo Bingmann
+	* btree.h: changing find_lower() to not use binary search for
+	small node sizes. More about this on my blog.
+	* btree.h: implementing bulk_load() to construct a B+ tree from a
+	pre-sorted iterator range.
+	* btree.h: replacing copy loops with std::copy calls.
+	* btree.h: added template parameter UsedAsSet to skip copying of
+	one byte value_type arrays in set container specializations.
+	* license: changing template header source code license to Boost
+	License, and the rest to GPLv3.
+	* memprofile: using malloc_count to create a memory profile of map
+	containers.
+	* speedtest: many changes to also include tr1::unordered_set and
+	to run both map and set container tests.
+	* testsuite: removing cppunit and using enclosed tpunit++ instead.
+
+2011-05-17	Timo Bingmann
+	* speedtest: added results of new speed test run in 2011 and also
+	appended notes to old speed test doxygen page.
+
+2011-05-06	Timo Bingmann
+	* btree.h, others.h: implementing erase(iterator) using recursive
+	depth first search for the referenced leaf node.
+
+2011-05-03	Timo Bingmann
+	* btree.h: Correcting documentation of lower_bound() and
+	upper_bound(). The functions themselves were correct.
+	* btree.h: Applying STL allocator patch contributed by MH.
+	* btree.h: Correcting limits of for loop to shift pairs from leaf
+	to right leaf nodes during deletion.
+
+2008-09-07	Timo Bingmann
+	* speedtest.cc: Modifying speedtest to also test the hash table
+	container implementation from __gnu_cxx. Extending tests by
+	another set of runs measuring only the find/lookup functions.
+
+2008-09-03	Timo Bingmann
+	* btree.h: Fixing crash when running verify() on an empty btree
+	object. Now the root node is freed when the last item is
+	removed. Also fixing crash when attempting to copy an empty btree
+	or when trying to remove a non-existing item from an empty btree.
+
+2008-08-13	Timo Bingmann
+	* btree.h: Replacing many / 2 integer divisions with >> 1 as
+	suggested by received e-mails. This may or may not improve
+	speed. I personally doubt it, because modern compilers should
+	optimize these simple instructions.
+
+2008-08-01	Timo Bingmann
+	* btree.h: Completely reworked reverse_iterator classes. Now they
+	are real implementations and do not use STL magic. Both
+	reverse_iterator and const_reverse_iterator should work as
+	expected now. Added two large test cases for iterators. Also
+	enabling public Default-Constructor on iterators.
+
+2008-08-01	Timo Bingmann
+	* btree.h: Fixing up a memory access bug which happens in
+	leaf->slotkey[leaf->slotuse - 1] if leaf-slotuse == 0. This doesnt
+	have any other bad effect, because the case only occurs when leaf
+	== root and thus the btree_update_lastkey message is never really
+	processed. However it still is a bad-memory access.
+
+2008-01-25	Timo Bingmann
+	* btree.h: Fixed a valgrind-detected bug based on a new test case
+	received via email. During the find() function find_lower() is
+	called and returns the slot number with the smallest or equal
+	key. However if the queried key is larger than all keys in a leaf
+	node or in the whole tree, find_lower() returns a slot number past
+	the last valid key slot. Comparison of this invalid slot with the
+	queried key then yields an uninitialized memory error in valgrind.
+
+2007-05-12	Timo Bingmann
+	* btree.h: Fixed segfault in print() because of non-existing root.
+		   Fixed segfault in end() when the tree is totally empty.
+		   Added BTREE_FRIENDS macro so that wxBTreeDemo can
+		   access private members.
+		   Changing print function to output to a user-given
+		   std::ostream

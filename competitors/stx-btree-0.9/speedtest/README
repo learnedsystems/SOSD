@@ -1,0 +1,12 @@
+                      *** STX B+ Tree Speed Test v0.9 ***
+
+Author: Timo Bingmann (Mail: tb a-with-circle panthema dot net)
+Date: 2013-05-05
+
+--- Summary ---
+
+This directory contains a set of speed tests programs, which can be used to
+compare the performance of different map containers.
+
+For more information see the speed test results web site
+http://panthema.net/2007/stx-btree/speedtest/

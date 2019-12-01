@@ -1,0 +1,11 @@
+.idea/
+build/
+cmake-build-debug/
+cmake-build-release/
+data/
+*~
+\#*
+*ipynb*
+competitors/rmi/*
+results/*.txt
+results_perf/*.txt

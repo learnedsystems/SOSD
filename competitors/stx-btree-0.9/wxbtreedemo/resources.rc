@@ -1,0 +1,38 @@
+// wxbtreedemo/resources.rc
+
+#include <windows.h>
+
+1	ICON	DISCARDABLE	"progicon.ico"
+
+1	RT_MANIFEST             "manifest.xml"
+
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+
+1   VERSIONINFO
+    FILEVERSION 0,1,0,0
+    PRODUCTVERSION 0,1,0,0
+    FILEFLAGSMASK 0x17L
+    FILEFLAGS 0x0L
+    FILEOS 0x4L
+    FILETYPE 0x1L
+    FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904e4"
+        BEGIN
+            VALUE "ProductName", "wxBTreeDemo"
+            VALUE "ProductVersion", "0,8,3,0"
+            VALUE "CompanyName", "Timo Bingmann"
+            VALUE "FileDescription", "B+ Tree Demonstration Program"
+            VALUE "FileVersion", "0,8,3,0"
+            VALUE "Comments", "http://panthema.net/2007/stx-btree/"
+            VALUE "LegalCopyright", "Copyright (C) 2008-2011 Timo Bingmann"
+            VALUE "OriginalFilename", "wxBTreeDemo.exe"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0, 1252
+    END
+END

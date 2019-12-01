@@ -1,0 +1,13 @@
+                      *** STX B+ Tree Speed Test v0.9 ***
+
+Author: Timo Bingmann (Mail: tb a-with-circle panthema dot net)
+Date: 2013-05-05
+
+--- Summary ---
+
+This directory contains a set of programs to create a run-time memory profile
+of different map containers, among them the B+ tree, the usual map and
+different hash map variant.
+
+For results including a longer discussion see
+https://panthema.net/2013/0505-STX-B+Tree-Memory-Usage/

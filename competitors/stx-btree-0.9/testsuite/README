@@ -1,0 +1,16 @@
+                       *** STX B+ Tree Test Suite v0.9 ***
+
+Author: Timo Bingmann (Mail: tb a-with-circle panthema dot net)
+Date: 2013-05-05
+
+--- Summary ---
+
+This directory contains a set of tests to check the B+ tree implementation for
+bugs. It can be compiled using the usual configure / "make all check" sequence
+from the top source directory.
+
+Additionally one can use "configure --enable-gcov" followed by "make run-gcov"
+to generate a converage report for the test suite.
+
+The report is also available online at
+http://panthema.net/2007/stx-btree/stx-btree-0.9-coverage/

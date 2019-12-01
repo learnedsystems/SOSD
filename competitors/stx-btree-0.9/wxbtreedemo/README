@@ -1,0 +1,34 @@
+                       *** STX B+ Tree Demo GUI v0.9 ***
+
+Author: Timo Bingmann (Mail: tb a-with-circle panthema dot net)
+Date: 2007-05-14
+
+--- Summary ---
+
+This demonstration program draws illustrations of the B+ trees constructed by
+the STX B+ Tree template classes. The demo allows the user to selected
+different types of B+ tree instantiations: integer or string keys and different
+slot numbers. The user may insert and erase key/data pairs from the tree and
+run different search operations. The demo program uses the cross-platform
+wxWidgets toolkit and can be compiled on Linux, Windows and MacOSX.
+
+--- Website / License ---
+
+The current demo source and some compiled binaries can be downloaded from
+http://panthema.net/2007/stx-btree/
+
+The demo's source code is released under the GNU General Public License v3
+(GPL) which can be found in the file COPYING.GPLv3.
+
+--- Program Usage ---
+
+The easiest way to see how the demo functions is by pressing "Insert Random"
+and selecting 20 pairs from the popup menu. These random number pairs are then
+shown in the B+ tree illustration.
+
+The operation buttons perform their respective functions on the B+ tree with
+the key/data input given in the two edit fields. The operation's result is
+printed into the text line below the buttons.
+
+The B+ tree drawing can be scrolled using the scrollbars and zoomed using the
+mouse wheel (on Windows this requires the drawing to be activated by a click).
