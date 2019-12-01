@@ -33,7 +33,7 @@ cd /sosdata/SOSD
 
 #### Local setup
 
-If you'd like to run the benchmark locally, you need a machine with at least 16GiB of RAM and 50GiB of free disk space. We've included a `setup_anywhere.sh` script which installs the prerequistes on `apt` based systems (Debian, Ubuntu).
+If you'd like to run the benchmark locally, you need a machine with at least 16GiB of RAM and 50GiB of free disk space. We've included a `setup_anywhere.sh` script which installs the prerequisites on `apt` based systems (Debian, Ubuntu).
 To set it up, follow these steps:
 
 ```bash
