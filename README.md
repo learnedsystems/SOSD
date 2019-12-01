@@ -25,7 +25,7 @@ If you'd like to run the whole benchmark on AWS, provision a new `c5d.4xlarge` n
 NOTE: The `scripts/setup_aws.sh` sets up an AWS `c5d.4xlarge` or `c5d.2xlarge` node for the rest of the benchmark scripts (it is *destructive*!). It can be run from your home directory, and will automatically clone this repository.
 
 ```bash
-wget https://github.com/learnedsystems/SOSD/blob/master/scripts/setup_aws.sh
+wget https://raw.githubusercontent.com/learnedsystems/SOSD/master/scripts/setup_aws.sh
 chmod +x ./setup_aws.sh
 . ./setup_aws.sh
 cd /sosdata/SOSD
