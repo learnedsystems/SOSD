@@ -25,7 +25,7 @@ If you'd like to run the whole benchmark on AWS, provision a new `c5d.4xlarge` n
 NOTE: The `scripts/setup_aws.sh` sets up an AWS `c5d.4xlarge` or `c5d.2xlarge` node for the rest of the benchmark scripts (it is *destructive*!). It can be run from your home directory, and will automatically clone this repository.
 
 ```bash
-wget https://github.com/learnedsystems/SOSD/blob/master/scripts/setup_aws.sh
+wget https://raw.githubusercontent.com/learnedsystems/SOSD/master/scripts/setup_aws.sh
 chmod +x ./setup_aws.sh
 . ./setup_aws.sh
 cd /sosdata/SOSD
@@ -33,7 +33,7 @@ cd /sosdata/SOSD
 
 #### Local setup
 
-If you'd like to run the benchmark locally, you need a machine with at least 16GiB of RAM and 22GiB of free disk space.
+If you'd like to run the benchmark locally, you need a machine with at least 16GiB of RAM and 50GiB of free disk space. We've included a `setup_anywhere.sh` script which installs the prerequisites on `apt` based systems (Debian, Ubuntu).
 To set it up, follow these steps:
 
 ```bash
