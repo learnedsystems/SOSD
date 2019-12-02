@@ -54,7 +54,7 @@ To run them all, execute `reproduce.sh`.
 
 ## Results
 
-Here is the current ranking of index structures.
+Here is the current "ranking" of index structures (numbers are in nanoseconds per lookup).
 If you have any improvements to existing indexes or want to add new ones, feel free to contact us.
 Provided that they fulfill the constraints outlined in the [paper](https://learned.systems/papers/sosd.pdf), we will update the "leaderboard" accordingly.
 All measurements are performed on the target platform: `c5d.4xlarge`.
