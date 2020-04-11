@@ -1,6 +1,20 @@
 cmake_minimum_required(VERSION 3.10)
 project(SOSD)
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "7.5.0")
+    message(FATAL_ERROR "SOSD requires GCC >= 7.5.0")
+  endif()
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9.0.1")
+    message(FATAL_ERROR "SOSD requires Clang >= 9.0.1")
+  endif()
+else()
+  message(FATAL_ERROR "SOSD only compiles with GCC or Clang")
+endif()
+
+
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math -Wall -g -march=native")
 set(CMAKE_CXX_STANDARD 14)
 
