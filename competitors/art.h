@@ -14,6 +14,8 @@
 
 class ART : public Competitor {
  public:
+  ~ART() { destructTree(tree_); }
+
   void Build(const std::vector<KeyValue<uint64_t>>& data) {
     allocated_byte_count = 0;
     data_ = &data;
@@ -798,6 +800,53 @@ class ART : public Competitor {
         }
       }
       delete node;
+    }
+  }
+
+  void destructTree(Node *node) {
+    if (!node) return;
+
+    switch (node->type) {
+      case NodeType4: {
+        auto n4 = static_cast<Node4 *>(node);
+        for (auto i = 0; i < node->count; i++) {
+          if (!isLeaf(n4->child[i])) {
+            destructTree(n4->child[i]);
+          }
+        }
+        delete n4;
+        break;
+      }
+      case NodeType16: {
+        auto n16 = static_cast<Node16 *>(node);
+        for (auto i = 0; i < node->count; i++) {
+          if (!isLeaf(n16->child[i])) {
+            destructTree(n16->child[i]);
+          }
+        }
+        delete n16;
+        break;
+      }
+      case NodeType48: {
+        auto n48 = static_cast<Node48 *>(node);
+        for (auto i = 0; i < 256; i++) {
+          if (n48->childIndex[i] != emptyMarker && !isLeaf(n48->child[n48->childIndex[i]])) {
+            destructTree(n48->child[n48->childIndex[i]]);
+          }
+        }
+        delete n48;
+        break;
+      }
+      case NodeType256: {
+        auto n256 = static_cast<Node256 *>(node);
+        for (auto i = 0; i < 256; i++) {
+          if (n256->child[i] != nullptr && !isLeaf(n256->child[i])) {
+            destructTree(n256->child[i]);
+          }
+        }
+        delete n256;
+        break;
+      }
     }
   }
 

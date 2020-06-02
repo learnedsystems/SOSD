@@ -7,4 +7,3 @@ scripts/download.sh
 scripts/build_rmis.sh
 scripts/prepare.sh
 scripts/execute.sh
-scripts/report.sh

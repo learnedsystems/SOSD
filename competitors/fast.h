@@ -13,16 +13,31 @@
 #include <algorithm>
 #include <limits>
 
+template <int size_scale>
 class Fast : public Competitor {
  public:
   void Build(const std::vector<KeyValue<uint32_t>>
              & data
   ) {
+    // drop keys for size scaling
+    std::vector<KeyValue<uint32_t>> reformatted_data;
+    min_key_ = data[0].key;
+    data_size_ = data.size();
+    for (auto iter : data) {
+      uint64_t idx = iter.value;
+      if (size_scale > 1 && idx % size_scale != 0)
+        continue;
+
+      max_key_ = iter.key;
+      max_val_ = iter.value;
+      reformatted_data.push_back(iter);
+    }
+    
     // Convert to int32_t.
     std::vector<KeyValue<int32_t>> datai32;
-    datai32.reserve(data.size());
-    for (const KeyValue<uint32_t>& key_value : data) {
-      if (key_value.key==std::numeric_limits<int32_t>::max()) {
+    datai32.reserve(reformatted_data.size());
+    for (const KeyValue<uint32_t>& key_value : reformatted_data) {
+      if (key_value.key>=std::numeric_limits<int32_t>::max()) {
         // This FAST implementation uses INT32_MAX as padding.
         util::fail("FAST does not support keys == INT32_MAX");
       }
@@ -41,7 +56,7 @@ class Fast : public Competitor {
 
     entries_ = new LeafEntry[n_];
     for (unsigned i = 0; i < n_; i++) {
-      if (i >= data.size()) {
+      if (i >= reformatted_data.size()) {
         // Pad to power of two.
         entries_[i].key = std::numeric_limits<int32_t>::max();
         entries_[i].value = i;
@@ -54,20 +69,32 @@ class Fast : public Competitor {
     fast_ = buildFAST(entries_, n_);
   }
 
-  uint64_t EqualityLookup(const uint32_t lookup) const {
+  SearchBound EqualityLookup(const uint32_t lookup) const {
     // Search for first occurrence of key.
     const int32_t lookup_key = static_cast<int32_t>(lookup);
     unsigned entry_offset = search(fast_, lookup_key);
-    if (entry_offset >= n_ || entries_[entry_offset].key!=lookup_key) {
-      util::fail("FAST: key not found");
+    if (entry_offset >= n_) {
+      std::cout << "ds: " << data_size_ << std::endl;
+      return (SearchBound) { max_val_, data_size_ };
+    }
+    
+    if (entries_[entry_offset].key == lookup_key) {
+      return (SearchBound) { entries_[entry_offset].value, entries_[entry_offset].value + 1 };
+    } else if (entries_[entry_offset].key < lookup_key) {
+      std::cout << "less!" << std::endl;
+    } else {
+      std::cout << "found key " << entries_[entry_offset].key
+                << " with index " << entries_[entry_offset].value
+                << " for lookup " << lookup << " (" << lookup_key << ")"
+                << std::endl;
     }
 
-    // Sum over all values with that key.
-    uint64_t result = entries_[entry_offset].value;
-    while (++entry_offset < n_ && entries_[entry_offset].key==lookup_key) {
-      result += entries_[entry_offset].value;
-    }
-    return result;
+    const uint64_t lb = (entries_[entry_offset].value > size_scale ?
+                   entries_[entry_offset].value - size_scale : 0);
+    const uint64_t ub = entries_[entry_offset].value;
+      
+    
+    return (SearchBound) { lb, ub };
   }
 
   std::string name() const {
@@ -78,8 +105,8 @@ class Fast : public Competitor {
     return sizeof(*this) + (sizeof(int32_t) + sizeof(LeafEntry))*n_;
   }
 
-  bool applicable(bool _unique, const std::string& _data_filename) const {
-    return true;
+  bool applicable(bool unique, const std::string& _data_filename) const {
+    return unique;
   }
 
   ~Fast() {
@@ -255,4 +282,8 @@ class Fast : public Competitor {
   unsigned n_;
   int32_t* fast_;
   LeafEntry* entries_ = nullptr;
+  uint32_t data_size_;
+  uint32_t min_key_;
+  uint32_t max_key_;
+  uint32_t max_val_;
 };

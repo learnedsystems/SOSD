@@ -7,97 +7,55 @@
 
 //#define DEBUG_RMI
 
-// RMI with linear search
-template<class KeyType, uint64_t build_time,
-    size_t rmi_size, const char* namespc, uint64_t (* RMI_FUNC)(uint64_t)>
-class RMI_L {
- public:
-  void Build(const std::vector<KeyValue<KeyType>>& data) {
-    data_ = data;
-  }
-
-  uint64_t EqualityLookup(const KeyType lookup_key) const {
-    uint64_t guess = RMI_FUNC(lookup_key);
-    uint64_t result = util::linear_search(data_, lookup_key, guess);
-
-#ifdef DEBUG_RMI
-    std::cout << "key: " << lookup_key
-              << "\tguess: " << guess
-              << "\tresult: " << result
-              << "\terror: " << (guess > result ? guess - result : result - guess)
-              << "\n";
-#endif
-    return result;
-  }
-
-  std::string name() const {
-    std::string str(namespc);
-    return str.substr(str.length() - 3);
-  }
-
-  std::size_t size() const {
-    return data_.size()*sizeof(KeyValue<KeyType>) + rmi_size;
-  }
-
-  bool applicable(bool _unique, const std::string& data_filename) const {
-    return true;
-  }
-
-  uint64_t additional_build_time() const { return build_time; }
-
- private:
-  // Copy of data.
-  std::vector<KeyValue<KeyType>> data_;
-};
-
 // RMI with binary search
-template<class KeyType, uint64_t build_time, size_t rmi_size,
-    const char* namespc,
-    uint64_t (* RMI_FUNC)(uint64_t, size_t*)>
+template<class KeyType, int rmi_variant,
+         uint64_t build_time, size_t rmi_size,
+         const char* namespc,
+         uint64_t (* RMI_FUNC)(uint64_t, size_t*),
+         bool (* RMI_LOAD)(char const*),
+         void (* RMI_CLEANUP)()>
 class RMI_B {
  public:
-  void Build(const std::vector<KeyValue<KeyType>>& data) {
-    data_ = data;
+  uint64_t Build(const std::vector<KeyValue<KeyType>>& data) {
+    data_size_ = data.size();;
+
+    const std::string rmi_path = (std::getenv("SOSD_RMI_PATH") == NULL ?
+                                  "rmi_data" : std::getenv("SOSD_RMI_PATH"));
+    if (!RMI_LOAD(rmi_path.c_str())) {
+      util::fail("Could not load RMI data from rmi_data/ -- either an allocation failed or the file could not be read.");
+    }
+
+    return build_time;
   }
 
-  uint64_t EqualityLookup(const KeyType lookup_key) const {
-    size_t error, num_qualifying;
+  SearchBound EqualityLookup(const KeyType lookup_key) const {
+    size_t error;
     uint64_t guess = RMI_FUNC(lookup_key, &error);
 
-    int64_t start = ((int64_t) guess - (int64_t) error) - 1;
-    start = (start < 0 ? 0 : start);
-    int64_t stop = guess + error + 1;
-    stop = ((uint64_t) stop > data_.size() ? data_.size() : stop);
+    uint64_t start = (guess < error ? 0 : guess - error);
+    uint64_t stop = (guess + error >= data_size_ ? data_size_ : guess + error);
 
-#ifdef RMI_DEBUG
-    std::cout << "searching for key " << lookup_key << " from "
-              << start << " to " << stop 
-              << " (" << (stop - start) << " values)\n";
-
-    std::cout << "    " << data_[start].key << " -- "
-              << data_[stop].key << "\n";
-#endif
-
-    return util::binary_search(data_, lookup_key, &num_qualifying,
-                               start, stop);
+    return (SearchBound){ start, stop };
   }
 
   std::string name() const {
-    std::string str(namespc);
-    return str.substr(str.length() - 3);
+    return "RMI";
   }
 
   std::size_t size() const {
-    return data_.size()*sizeof(KeyValue<KeyType>) + rmi_size;
+    return rmi_size;
   }
 
   bool applicable(bool _unique, const std::string& data_filename) const {
     return true;
   }
 
-  uint64_t additional_build_time() const { return build_time; }
-
+  int variant() const { return rmi_variant; }
+  
+  ~RMI_B() {
+    RMI_CLEANUP();
+  }
+  
  private:
-  // Copy of data.
-  std::vector<KeyValue<KeyType>> data_;
+  uint64_t data_size_;
 };

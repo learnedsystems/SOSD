@@ -1,33 +1,78 @@
+#include <cstdlib>
 #include "benchmark.h"
+#include "benchmarks/benchmark_rbs.h"
+#include "benchmarks/benchmark_rmi.h"
+#include "benchmarks/benchmark_rs.h"
+#include "benchmarks/benchmark_pgm.h"
+#include "benchmarks/benchmark_art.h"
+#include "benchmarks/benchmark_btree.h"
+#include "benchmarks/benchmark_ibtree.h"
+#include "benchmarks/benchmark_fast64.h"
+#include "benchmarks/benchmark_fst.h"
+#include "benchmarks/benchmark_wormhole.h"
 #include "util.h"
 #include "utils/cxxopts.hpp"
 
-#include "competitors/oracle.h"
 #include "competitors/binary_search.h"
-#include "competitors/interpolation_search.h"
-#include "competitors/rmi_search.h"
-#include "competitors/radix_binary_search.h"
-#include "competitors/spline/radix_spline.h"
-#include "competitors/art.h"
-#include "competitors/art32.h"
-#include "competitors/fast.h"
-#include "competitors/stx_btree.h"
-#include "competitors/rm_tip.h"
+#include "competitors/hash.h"
+#include "competitors/stanford_hash.h"
 
+#include "searches/branching_binary_search.h"
+#include "searches/branchless_binary_search.h"
+#include "searches/linear_search.h"
+#include "searches/interpolation_search.h"
 using namespace std;
 
-#define NAME2(a, b)         NAME2_HIDDEN(a,b)
-#define NAME2_HIDDEN(a, b)  a ## b
+#define check_only(tag, code) if ((!only_mode) || only == tag) { code; }
+#define add_search_type(name, func, type, search_class) { if (search_type == (name)) { auto search = search_class<type>(); sosd::Benchmark<type, search_class> benchmark(filename, lookups, num_repeats, perf, build, fence, cold_cache, track_errors, num_threads, search); func(benchmark, pareto, only_mode, only, filename); } }
 
-#define NAME3(a, b, c)         NAME3_HIDDEN(a,b,c)
-#define NAME3_HIDDEN(a, b, c)  a ## b ## c
+template<class Benchmark>
+void execute_32_bit(Benchmark benchmark, bool pareto,
+                    bool only_mode, std::string only,
+                    std::string filename) {
+  // Build and probe individual indexes.
+  check_only("RMI", benchmark_32_rmi(benchmark, pareto, filename));
+  check_only("RS", benchmark_32_rs(benchmark, pareto));
+  check_only("PGM", benchmark_32_pgm(benchmark, pareto));
+  check_only("BTree", benchmark_32_btree(benchmark, pareto));
+  check_only("IBTree", benchmark_32_ibtree(benchmark, pareto));
+  check_only("FAST", benchmark_32_fast(benchmark, pareto));
+#ifndef __APPLE__
+  check_only("FST", benchmark_32_fst(benchmark, pareto));
+  check_only("Wormhole", benchmark_32_wormhole(benchmark, pareto));
+#endif
 
-#define NAME5(a, b, c, d, e)         NAME5_HIDDEN(a,b,c,d,e)
-#define NAME5_HIDDEN(a, b, c, d, e)  a ## b ## c ## d ## e
+  if (benchmark.uses_binary_search()) {
+    check_only("RBS", benchmark_32_rbs(benchmark, pareto));
+    check_only("CuckooMap", benchmark.template Run<CuckooHash>());
+    check_only("RobinHash", benchmark.template Run<RobinHash<uint32_t>>());
+    check_only("BS", benchmark.template Run<BinarySearch<uint32_t>>());
+  }
+}
 
-#define run_rmi_linear(dtype, name, suffix)  if (filename.find("/" #name "_" #dtype) != std::string::npos) { benchmark.Run<RMI_L<NAME2(dtype, _t), NAME5(name, _, dtype, _, suffix)::BUILD_TIME_NS, NAME5(name, _, dtype, _,suffix)::RMI_SIZE, NAME5(name, _, dtype, _,suffix)::NAME, NAME5(name, _, dtype, _, suffix)::lookup>>(); }
+template<class Benchmark>
+void execute_64_bit(Benchmark benchmark, bool pareto,
+                    bool only_mode, std::string only,
+                    std::string filename) {
+  // Build and probe individual indexes.
+  check_only("RMI", benchmark_64_rmi(benchmark, pareto, filename));
+  check_only("RS", benchmark_64_rs(benchmark, pareto));
+  check_only("PGM", benchmark_64_pgm(benchmark, pareto));
+  check_only("ART", benchmark_64_art(benchmark, pareto));
+  check_only("BTree", benchmark_64_btree(benchmark, pareto));
+  check_only("IBTree", benchmark_64_ibtree(benchmark, pareto));
+  check_only("FAST", benchmark_64_fast(benchmark, pareto));
+#ifndef __APPLE__
+  check_only("FST", benchmark_64_fst(benchmark, pareto));
+  check_only("Wormhole", benchmark_64_wormhole(benchmark, pareto));
+#endif
 
-#define run_rmi_binary(dtype, name, suffix)  if (filename.find("/" #name "_" #dtype) != std::string::npos) { benchmark.Run<RMI_B<NAME2(dtype, _t), NAME5(name, _, dtype, _, suffix)::BUILD_TIME_NS, NAME5(name, _, dtype, _, suffix)::RMI_SIZE, NAME5(name, _, dtype, _,suffix)::NAME, NAME5(name, _, dtype, _, suffix)::lookup>>(); }
+  if (benchmark.uses_binary_search()) {
+    check_only("RBS", benchmark_64_rbs(benchmark, pareto));
+    check_only("RobinHash", benchmark.template Run<RobinHash<uint64_t>>());
+    check_only("BS", benchmark.template Run<BinarySearch<uint64_t>>());
+  }
+}
 
 int main(int argc, char* argv[]) {
   cxxopts::Options options("benchmark", "Searching on sorted data benchmark");
@@ -39,9 +84,20 @@ int main(int argc, char* argv[]) {
       ("r,repeats",
        "Number of repeats",
        cxxopts::value<int>()->default_value("1"))
+      ("t,threads",
+       "Number of lookup threads",
+       cxxopts::value<int>()->default_value("1"))
       ("p,perf", "Track performance counters")
       ("b,build", "Only measure and report build times")
-      ("histogram", "Measure each lookup and output histogram data")
+      ("only", "Only run the specified index",
+       cxxopts::value<std::string>()->default_value(""))
+      ("cold-cache", "Clear the CPU cache between each lookup")
+      ("pareto", "Run with multiple different sizes for each competitor")
+      ("fence", "Execute a memory barrier between each lookup")
+      ("errors", "Tracks index errors, and report those instead of lookup times")
+      ("search",
+       "Specify a search type, one of: binary, branchless_binary, linear, interpolation",
+       cxxopts::value<std::string>()->default_value("binary"))
       ("positional",
        "extra positional arguments",
        cxxopts::value<std::vector<std::string>>());
@@ -58,18 +114,38 @@ int main(int argc, char* argv[]) {
   const size_t num_repeats = result["repeats"].as<int>();
   cout << "Repeating lookup code " << num_repeats << " time(s)." << endl;
 
+  const size_t num_threads = result["threads"].as<int>();
+  cout << "Using " << num_threads << " thread(s)." << endl;
+
   const bool perf = result.count("perf");
   const bool build = result.count("build");
-  const bool histogram = result.count("histogram");
+  const bool fence = result.count("fence");
+  const bool track_errors = result.count("errors");
+  const bool cold_cache = result.count("cold-cache");
+  const bool pareto = result.count("pareto");
   const std::string filename = result["data"].as<std::string>();
   const std::string lookups = result["lookups"].as<std::string>();
+  const std::string search_type = result["search"].as<std::string>();
+  const bool only_mode = result.count("only") || std::getenv("SOSD_ONLY");
+  std::string only;
+
+  if (result.count("only")) {
+    only = result["only"].as<std::string>();
+  } else if (std::getenv("SOSD_ONLY")) {
+    only = std::string(std::getenv("SOSD_ONLY"));
+  } else {
+    only = "";
+  }
 
   const DataType type = util::resolve_type(filename);
 
-  if (lookups.find("lookups")==std::string::npos) {
+  if (lookups.find("lookups") == std::string::npos) {
     cerr
         << "Warning: lookups file seems misnamed. Did you specify the right one?\n";
   }
+
+  if (only_mode)
+    cout << "Only executing indexes matching " << only << std::endl;
 
   // Pin main thread to core 0.
   util::set_cpu_affinity(0);
@@ -77,57 +153,20 @@ int main(int argc, char* argv[]) {
   switch (type) {
     case DataType::UINT32: {
       // Create benchmark.
-      sosd::Benchmark<uint32_t>
-          benchmark(filename, lookups, num_repeats, perf, build, histogram);
-
-      // Build and probe individual indexes.
-      benchmark.Run<OracleSearch<uint32_t>, true>();
-
-      // RMIs
-      run_rmi_linear(uint32, normal_200M, rmi);
-      run_rmi_linear(uint32, lognormal_200M, rmi);
-      run_rmi_binary(uint32, books_200M, rmi);
-      run_rmi_binary(uint32, fb_200M, rmi);
-      run_rmi_linear(uint32, uniform_dense_200M, rmi);
-      run_rmi_linear(uint32, uniform_sparse_200M, rmi);
-
-      benchmark.Run<RadixSpline<uint32_t>>();
-      benchmark.Run<BinarySearch<uint32_t>>();
-      benchmark.Run<InterpolationSearch<uint32_t>>();
-      benchmark.Run<RadixBinarySearch<uint32_t>>();
-      benchmark.Run<Fast>();
-      benchmark.Run<ART32>();
-      benchmark.Run<RMThreePointInterpolationSearch<uint32_t>>();
-      benchmark.Run<STXBTree<uint32_t>>();
+      add_search_type("binary", execute_32_bit, uint32_t, BranchingBinarySearch);
+      add_search_type("branchless_binary", execute_32_bit, uint32_t, BranchlessBinarySearch);
+      add_search_type("linear", execute_32_bit, uint32_t, LinearSearch);
+      add_search_type("interpolation", execute_32_bit, uint32_t, InterpolationSearch);
 
       break;
+
     }
     case DataType::UINT64: {
       // Create benchmark.
-      sosd::Benchmark<uint64_t>
-          benchmark(filename, lookups, num_repeats, perf, build, histogram);
-
-      // Build and probe individual indexes.
-      benchmark.Run<OracleSearch<uint64_t>, true>();
-
-      // RMIs
-      run_rmi_binary(uint64, wiki_ts_200M, rmi);
-      run_rmi_binary(uint64, osm_cellids_200M, rmi);
-      run_rmi_linear(uint64, normal_200M, rmi);
-      run_rmi_binary(uint64, lognormal_200M, rmi);
-      run_rmi_binary(uint64, books_200M, rmi);
-      run_rmi_binary(uint64, fb_200M, rmi);
-      run_rmi_linear(uint64, uniform_dense_200M, rmi);
-      run_rmi_linear(uint64, uniform_sparse_200M, rmi);
-
-      benchmark.Run<RadixSpline<uint64_t>>();
-      benchmark.Run<RadixBinarySearch<uint64_t>>();
-      benchmark.Run<ART>();
-      benchmark.Run<BinarySearch<uint64_t>>();
-      benchmark.Run<InterpolationSearch<uint64_t>>();
-      benchmark.Run<RMThreePointInterpolationSearch<uint64_t>>();
-      benchmark.Run<STXBTree<uint64_t>>();
-
+      add_search_type("binary", execute_64_bit, uint64_t, BranchingBinarySearch);
+      add_search_type("branchless_binary", execute_64_bit, uint64_t, BranchlessBinarySearch);
+      add_search_type("linear", execute_64_bit, uint64_t, LinearSearch);
+      add_search_type("interpolation", execute_64_bit, uint64_t, InterpolationSearch);
       break;
     }
   }

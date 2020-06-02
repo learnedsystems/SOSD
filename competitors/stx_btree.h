@@ -5,46 +5,68 @@
 
 #include <stx/btree_multimap.h>
 
-template<class KeyType>
+template<class KeyType, int size_scale>
 class STXBTree : public Competitor {
  public:
   STXBTree() : btree_(TrackingAllocator<std::pair<KeyType, uint64_t>>(
       total_allocation_size)) {
   }
 
-  void Build(const std::vector<KeyValue<KeyType>>& data) {
+  uint64_t Build(const std::vector<KeyValue<KeyType>>& data) {
     std::vector<std::pair<KeyType, uint64_t>> reformatted_data;
     reformatted_data.reserve(data.size());
+
     for (auto iter : data) {
-      reformatted_data.emplace_back(KeyType(iter.key), uint64_t(iter.value));
+      uint64_t idx = iter.value;
+      if (size_scale > 1 && idx % size_scale != 0)
+        continue;
+      
+      reformatted_data.emplace_back(KeyType(iter.key), idx);
     }
-    btree_.bulk_load(reformatted_data.begin(), reformatted_data.end());
+    data_size_ = data.size();
+    
+    return util::timing([&] {
+      btree_.bulk_load(reformatted_data.begin(), reformatted_data.end());
+    });
+
+
   }
 
-  uint64_t EqualityLookup(const KeyType lookup_key) const {
+
+  SearchBound EqualityLookup(const KeyType lookup_key) const {
     // Search for first occurrence of key.
     auto it = btree_.lower_bound(lookup_key);
-    if (it==btree_.end() || it->first!=lookup_key)
-      util::fail("STXBTree: key not found");
-    // Sum over all values with that key.
-    uint64_t result = it->second;
-    while (++it!=btree_.end() && it->first==lookup_key) {
-      result += it->second;
+    
+    uint64_t guess;
+    if (it == btree_.end()) {
+      guess = data_size_ - 1;
+    } else {
+      guess = it->second;
     }
-    return result;
+    
+    const uint64_t error = size_scale - 1;
+
+    const uint64_t start = guess < error ? 0 : guess - error;
+    const uint64_t
+        stop = guess + 1 > data_size_ ? data_size_ : guess + 1; // stop is exclusive (that's why +1)
+
+    return (SearchBound){ start, stop };
   }
 
   std::string name() const {
-    return "stx::btree_multimap";
+    return "BTree";
   }
 
   std::size_t size() const {
     return btree_.get_allocator().total_allocation_size + sizeof(*this);
   }
 
+  int variant() const { return size_scale; }
+
  private:
   // Using a multimap here since keys may contain duplicates.
   uint64_t total_allocation_size = 0;
+  uint64_t data_size_ = 0;
   stx::btree_multimap<KeyType,
                       uint64_t,
                       std::less<KeyType>,

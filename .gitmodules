@@ -1,3 +1,15 @@
 [submodule "RMI"]
 	path = RMI
-	url = https://github.com/learnedsystems/RMI.git
+	url = git@github.com:learnedsystems/RMI.git
+[submodule "competitors/FST"]
+	path = competitors/FST
+	url = git@github.com:Christoph-Maximilian/FST.git
+[submodule "competitors/PGM-index"]
+	path = competitors/PGM-index
+	url = https://github.com/gvinciguerra/PGM-index
+[submodule "fast64"]
+	path = fast64
+	url = https://github.com/RyanMarcus/fast64.git
+[submodule "wormhole"]
+	path = wormhole
+	url = https://github.com/wuxb45/wormhole.git
