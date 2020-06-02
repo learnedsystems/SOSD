@@ -1,6 +1,7 @@
 #! /usr/bin/env bash
 git submodule update --init --recursive
 
+mkdir -p rmi_data
 
 function build_rmi() {
     DATA_NAME=$1
@@ -11,27 +12,45 @@ function build_rmi() {
 
     shift 1
     if [ ! -f $HEADER_PATH ]; then
-        echo "Building RMI for $DATA_NAME"
-        RUST_BACKTRACE=1 RUST_LOG=trace RMI/target/release/rmi data/$DATA_NAME ${DATA_NAME}_rmi $@
+        echo "Building RMI for $DATA_NAME ($INCR)"
+        RUST_BACKTRACE=1 RUST_LOG=trace RMI/target/release/rmi data/$DATA_NAME ${DATA_NAME}_rmi $@ -d rmi_data/ -e
         mv $HEADER1_NAME competitors/rmi/
         mv $HEADER2_NAME competitors/rmi/
         mv $C_NAME competitors/rmi/
     fi
 }
 
+function build_rmi_set() {
+    DATA_NAME=$1
+    HEADER_PATH=competitors/rmi/${DATA_NAME}_0.h
+    JSON_PATH=scripts/rmi_specs/${DATA_NAME}.json
+
+    shift 1
+    if [ ! -f $HEADER_PATH ]; then
+        echo "Building RMI set for $DATA_NAME"
+        RMI/target/release/rmi data/$DATA_NAME --param-grid ${JSON_PATH} -d rmi_data/
+        mv ${DATA_NAME}_* competitors/rmi/
+    fi
+}
+
+
 cd RMI && cargo build --release && cd ..
-build_rmi normal_200M_uint32         radix,linear_spline      262144
-build_rmi normal_200M_uint64         radix,linear_spline      262144
-build_rmi lognormal_200M_uint32      radix,linear_spline      2097152
-build_rmi lognormal_200M_uint64      histogram,cubic,linear   300     -e
-build_rmi osm_cellids_200M_uint64    bradix,linear            2097152 -e
-build_rmi wiki_ts_200M_uint64        bradix,linear            2097152 -e
-build_rmi books_200M_uint32          bradix,linear            16384   -e
-build_rmi books_200M_uint64          bradix,linear            32768   -e
-build_rmi fb_200M_uint64             linear,linear            1000000 -e
-build_rmi fb_200M_uint32             linear,linear            1000000 -e
-build_rmi uniform_dense_200M_uint32  linear                   1
-build_rmi uniform_dense_200M_uint64  linear                   1
-build_rmi uniform_sparse_200M_uint64 linear,linear            500000
-build_rmi uniform_sparse_200M_uint32 linear,linear            500000
+
+build_rmi_set fb_200M_uint64
+build_rmi_set wiki_ts_200M_uint64
+
+build_rmi_set osm_cellids_200M_uint64
+build_rmi_set osm_cellids_400M_uint64
+build_rmi_set osm_cellids_600M_uint64
+build_rmi_set osm_cellids_800M_uint64
+
+build_rmi_set books_200M_uint64
+build_rmi_set books_400M_uint64
+build_rmi_set books_600M_uint64
+build_rmi_set books_800M_uint64
+
+build_rmi_set books_200M_uint32
+
+
+scripts/rmi_specs/gen.sh
 

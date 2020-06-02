@@ -10,6 +10,8 @@
 #include <cassert>
 #include <unordered_map>
 
+#define ROW_WIDTH 1
+
 //#define PRINT_ERRORS
 
 enum DataType {
@@ -23,16 +25,34 @@ struct KeyValue {
   uint64_t value;
 } __attribute__((packed));
 
+template<class KeyType>
+struct Row {
+  KeyType key;
+  uint64_t data[ROW_WIDTH];
+};
+
 template<class KeyType = uint64_t>
 struct EqualityLookup {
   KeyType key;
   uint64_t result;
 };
 
+struct SearchBound {
+  size_t start;
+  size_t stop;
+};
+
 namespace util {
 
 const static uint64_t NOT_FOUND = std::numeric_limits<uint64_t>::max();
 
+
+static void fail(const std::string& message) {
+  std::cerr << message << std::endl;
+  exit(EXIT_FAILURE);
+}
+
+[[maybe_unused]]
 static std::string get_suffix(const std::string& filename) {
   const std::size_t pos = filename.find_last_of("_");
   if (pos==filename.size() - 1 || pos==std::string::npos)
@@ -40,8 +60,9 @@ static std::string get_suffix(const std::string& filename) {
   return filename.substr(pos + 1);
 }
 
+[[maybe_unused]]
 static DataType resolve_type(const std::string& filename) {
-  const std::string suffix = get_suffix(filename);
+  const std::string suffix = util::get_suffix(filename);
   if (suffix=="uint32") {
     return DataType::UINT32;
   } else if (suffix=="uint64") {
@@ -50,11 +71,6 @@ static DataType resolve_type(const std::string& filename) {
     std::cerr << "type " << suffix << " not supported" << std::endl;
     exit(EXIT_FAILURE);
   }
-}
-
-static void fail(const std::string& message) {
-  std::cerr << message << std::endl;
-  exit(EXIT_FAILURE);
 }
 
 // Pins the current thread to core `core_id`.
@@ -175,240 +191,22 @@ static uint64_t get_value(const KeyType i) {
 
 // Generates deterministic values for keys.
 template<class KeyType>
-static std::vector<KeyValue<KeyType>> add_values(const std::vector<KeyType>& keys) {
-  std::vector<KeyValue<KeyType>> result;
+static std::vector<Row<KeyType>> add_values(const std::vector<KeyType>& keys) {
+  std::vector<Row<KeyType>> result;
   result.reserve(keys.size());
+  
   for (uint64_t i = 0; i < keys.size(); ++i) {
-    result.push_back({keys[i], get_value(i)});
+    Row<KeyType> row;
+    row.key = keys[i];
+    for (int j = 0; j < ROW_WIDTH; j++) {
+      row.data[j] = get_value(i*(j+1));
+    }
+        
+    result.push_back(row);
   }
   return result;
 }
 
-// Returns the sum over all values with the given lookup key.
-// Caution: data has to be sorted.
-template<class KeyType>
-static uint64_t binary_search(const std::vector<KeyValue<KeyType>>& data,
-                              const KeyType lookup_key,
-                              size_t* num_qualifying) {
-  *num_qualifying = 0;
-  // Search for first occurrence of key.
-  auto it = std::lower_bound(data.begin(),
-                             data.end(),
-                             lookup_key,
-                             [](const KeyValue<KeyType>& lhs,
-                                const uint64_t lookup_key) {
-                               return lhs.key < lookup_key;
-                             });
-  if (it==data.end() || it->key!=lookup_key)
-    fail("binary search: key not found");
-  // Sum over all values with that key.
-  uint64_t result = it->value;
-  ++(*num_qualifying);
-
-  while (++it!=data.end() && it->key==lookup_key) {
-    result += it->value;
-    ++(*num_qualifying);
-  }
-  return result;
-}
-
-template<class KeyType>
-static inline uint64_t linear_search(const std::vector<KeyValue<KeyType>>& data,
-                                     const KeyType lookup_key,
-                                     int64_t estimate) {
-  // NOTE: not tested for look ups where the key does not exist .. could be wrong ..
-
-#ifdef PRINT_ERRORS
-  const int64_t org_estimate = estimate;
-  int64_t actual_key_pos = -1;
-#endif
-
-  const int64_t limit = data.size();
-  assert(0 <= estimate && estimate < limit);
-
-  // Estimated too low
-  if (data[estimate].key < lookup_key) {
-    estimate++;
-    while (estimate < limit && data[estimate].key < lookup_key) {
-      estimate++;
-    }
-
-    uint64_t result = 0;
-    while (estimate < limit && data[estimate].key==lookup_key) {
-      result += data[estimate].value;
-#ifdef PRINT_ERRORS
-      // First encountered position == first key occurrence in forward search.
-      if (actual_key_pos==-1)
-        actual_key_pos = estimate;
-#endif
-      estimate++;
-    }
-#ifdef PRINT_ERRORS
-    std::cout << org_estimate - actual_key_pos << std::endl;
-#endif
-    return result;
-  }
-
-  // We estimated too high
-  if (data[estimate].key > lookup_key) {
-    estimate--;
-    while (estimate > 0 && data[estimate].key > lookup_key) {
-      estimate--;
-    }
-
-    uint64_t result = 0;
-    while (estimate > 0 && data[estimate].key==lookup_key) {
-      result += data[estimate].value;
-#ifdef PRINT_ERRORS
-      // Last encountered position == first key occurrence in backwards search.
-      actual_key_pos = estimate;
-#endif
-      estimate--;
-    }
-#ifdef PRINT_ERRORS
-    std::cout << org_estimate - actual_key_pos << std::endl;
-#endif
-    return result;
-  }
-
-  // We estimated just about right
-  uint64_t initial_pos = estimate;
-  uint64_t result = 0;
-
-  // Go down
-  while (estimate > 0 && data[estimate].key==lookup_key) {
-    result += data[estimate].value;
-#ifdef PRINT_ERRORS
-    // Last encountered position == first key occurrence in backwards search.
-    actual_key_pos = estimate;
-#endif
-    estimate--;
-  }
-
-  // Go up
-  estimate = initial_pos;
-  estimate++;
-  while (estimate < limit && data[estimate].key==lookup_key) {
-    result += data[estimate].value;
-    estimate++;
-  }
-
-#ifdef PRINT_ERRORS
-  std::cout << org_estimate - actual_key_pos << std::endl;
-#endif
-  return result;
-}
-
-template<class KeyType>
-static inline uint64_t exponential_search(const std::vector<KeyValue<KeyType>>& data,
-                                          const KeyType lookup_key,
-                                          int64_t estimate) {
-  // NOTE: not tested for look ups where the key does not exist .. could be wrong ..
-
-  const int64_t limit = data.size();
-  assert(0 <= estimate && estimate < limit);
-
-  // Estimated just about right
-  if (data[estimate].key==lookup_key) {
-    uint64_t initial_pos = estimate;
-    uint64_t result = 0;
-
-    // Go down
-    while (estimate > 0 && data[estimate].key==lookup_key) {
-      result += data[estimate].value;
-      estimate--;
-    }
-
-    // Go up
-    estimate = initial_pos;
-    estimate++;
-    while (estimate < limit && data[estimate].key==lookup_key) {
-      result += data[estimate].value;
-      estimate++;
-    }
-
-    return result;
-  }
-
-  // Exponential search towards the key
-  uint64_t step = 1;
-  int64_t prev = estimate;
-  if (data[estimate].key < lookup_key) {
-    // Estimated too low -> exponential search upwards
-    estimate += step;
-    while (estimate < limit && data[estimate].key < lookup_key) {
-      prev = estimate;
-      step = step << 1;
-      estimate += step;
-    }
-
-    estimate = prev;
-  } else {
-    // Estimated too high -> exponential search downwards
-    estimate -= step;
-    while (estimate > 0 && data[estimate].key >= lookup_key) {
-      step = step << 1;
-      estimate -= step;
-    }
-    if (estimate < 0) {
-      estimate = 0;
-    }
-  }
-
-  // Rather close now: the next exponential step upwards would be too high
-  while (estimate < limit && data[estimate].key < lookup_key) {
-    estimate++;
-  }
-
-  // 'estimate' points to first key now -> sum up
-  uint64_t result = 0;
-  while (estimate < limit && data[estimate].key==lookup_key) {
-    result += data[estimate].value;
-    estimate++;
-  }
-
-  return result;
-}
-
-template<class KeyType>
-static uint64_t binary_search(const std::vector<KeyValue<KeyType>>& data,
-                              const KeyType lookup_key,
-                              size_t* num_qualifying,
-                              size_t start, size_t end) {
-  *num_qualifying = 0;
-  // Search for first occurrence of key.
-  auto it = std::lower_bound(data.begin() + start,
-                             data.begin() + end,
-                             lookup_key,
-                             [](const KeyValue<KeyType>& lhs,
-                                const uint64_t lookup_key) {
-                               return lhs.key < lookup_key;
-                             });
-  if (it==data.end() || it->key!=lookup_key) {
-    std::cerr << "key " << lookup_key << " not found between "
-              << start << " and " << end << "\n";
-
-    auto corr = std::lower_bound(data.begin(),
-                                 data.end(),
-                                 lookup_key,
-                                 [](const KeyValue<KeyType>& lhs,
-                                    const uint64_t lookup_key) {
-                                   return lhs.key < lookup_key;
-                                 });
-    std::cerr << "correct index: " << std::distance(data.begin(), corr) << "\n";
-
-    fail("binary search: key not found");
-  }
-  // Sum over all values with that key.
-  uint64_t result = it->value;
-  ++(*num_qualifying);
-
-  while (++it!=data.end() && it->key==lookup_key) {
-    result += it->value;
-    ++(*num_qualifying);
-  }
-  return result;
-}
 
 // Based on: https://en.wikipedia.org/wiki/Xorshift
 class FastRandom {
@@ -442,5 +240,7 @@ class FastRandom {
   static constexpr uint64_t Min() { return 0; }
   static constexpr uint64_t Max() { return std::numeric_limits<uint64_t>::max(); }
 };
+
+
 
 } // namespace util

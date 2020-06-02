@@ -1,4 +1,5 @@
 #include "util.h"
+#include "searches/branching_binary_search.h"
 
 #include <iostream>
 #include <vector>
@@ -18,8 +19,7 @@ constexpr size_t max_num_retries = 100;
 
 // Generates `num_lookups` lookups such that `negative_lookup_ratio` lookups are negative.
 template<class KeyType, class T>
-vector<EqualityLookup<KeyType>> generate_equality_lookups(const vector<KeyValue<
-    KeyType>>& data,
+vector<EqualityLookup<KeyType>> generate_equality_lookups(const vector<Row<KeyType>>& data,
                                                           const vector<T>& unique_keys,
                                                           const size_t num_lookups,
                                                           const double negative_lookup_ratio) {
@@ -28,6 +28,7 @@ vector<EqualityLookup<KeyType>> generate_equality_lookups(const vector<KeyValue<
   util::FastRandom ranny(42);
   size_t num_generated = 0;
   size_t num_retries = 0;
+  BranchingBinarySearch<KeyType> bbs;
 
   // Required to generate negative lookups within data domain.
   const KeyType min_key = data.front().key;
@@ -43,7 +44,7 @@ vector<EqualityLookup<KeyType>> generate_equality_lookups(const vector<KeyValue<
       while (num_qualifying > 0) {
         // Draw lookup key from within data domain.
         negative_lookup = (ranny.ScaleFactor()*(max_key - min_key)) + min_key;
-        util::binary_search(data, negative_lookup, &num_qualifying);
+        bbs.search(data, negative_lookup, &num_qualifying, 0, data.size());
       }
       lookups.push_back({negative_lookup, util::NOT_FOUND});
       ++num_generated;
@@ -59,7 +60,7 @@ vector<EqualityLookup<KeyType>> generate_equality_lookups(const vector<KeyValue<
     // Perform binary search on original keys.
     size_t num_qualifying;
     const uint64_t
-        result = util::binary_search(data, lookup_key, &num_qualifying);
+      result = bbs.search(data, lookup_key, &num_qualifying, 0, data.size());
 
     if (num_qualifying > max_num_qualifying) {
       // Too many qualifying entries.
@@ -78,14 +79,15 @@ vector<EqualityLookup<KeyType>> generate_equality_lookups(const vector<KeyValue<
 
 template<class KeyType>
 vector<EqualityLookup<KeyType>> generate_equality_lookups_from_trace(
-    const vector<KeyValue<KeyType>>& data,
+    const vector<Row<KeyType>>& data,
     const vector<KeyType> keys) {
 
   vector<EqualityLookup<KeyType>> lookups;
-
+  BranchingBinarySearch<KeyType> bbs;
+  
   size_t nq;
   for (KeyType key : keys) {
-    lookups.push_back({key, util::binary_search(data, key, &nq)});
+    lookups.push_back({key, bbs.search(data, key, &nq, 0, keys.size())});
   }
 
   return lookups;
@@ -146,7 +148,7 @@ int main(int argc, char* argv[]) {
       vector<uint32_t> unique_keys = util::remove_duplicates(keys);
 
       // Add artificial values to original keys.
-      vector<KeyValue<uint32_t>> data = util::add_values(keys);
+      vector<Row<uint32_t>> data = util::add_values(keys);
 
       // Generate benchmarks.
       vector<EqualityLookup<uint32_t>> equality_lookups;
@@ -189,7 +191,7 @@ int main(int argc, char* argv[]) {
       vector<uint64_t> unique_keys = util::remove_duplicates(keys);
 
       // Add artificial values to original keys.
-      vector<KeyValue<uint64_t>> data = util::add_values(keys);
+      vector<Row<uint64_t>> data = util::add_values(keys);
 
       // Generate benchmarks.
       vector<EqualityLookup<uint64_t>> equality_lookups;

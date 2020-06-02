@@ -15,7 +15,7 @@ function do_benchmark() {
         echo "Already have results for $1"
     else
         echo "Executing workload $1"
-        $BENCHMARK -r 1 ./data/$1 ./data/$1_equality_lookups_10M | tee ./results/$1_results.txt
+        $BENCHMARK -r 1 ./data/$1 ./data/$1_equality_lookups_10M --pareto | tee ./results/$1_results.txt
     fi
 }
 

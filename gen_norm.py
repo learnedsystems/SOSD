@@ -45,7 +45,59 @@ if not os.path.exists("data/normal_200M_uint64"):
         f.write(struct.pack("Q", len(keys)))
         keys.tofile(f)
 
-    
+if not os.path.exists("data/normal_400M_uint64"):
+    print("64 bit...")
+    keys = np.linspace(0, 1, 2*NUM_KEYS + 2)[1:-1]
+
+    # for some reason, the PPF function seems to use quadratic memory
+    # with the size of its input.
+    keys = np.array_split(keys, 1000)
+    keys = [norm.ppf(x) for x in keys]
+    keys = np.array(keys).flatten()
+
+    keys = (keys - np.min(keys)) / (np.max(keys) - np.min(keys))
+    keys *= 2**63 - 1
+    keys = keys.astype(np.uint64)
+
+    with open("data/normal_400M_uint64", "wb") as f:
+        f.write(struct.pack("Q", len(keys)))
+        keys.tofile(f)
+
+if not os.path.exists("data/normal_600M_uint64"):
+    print("64 bit...")
+    keys = np.linspace(0, 1, 3*NUM_KEYS + 2)[1:-1]
+
+    # for some reason, the PPF function seems to use quadratic memory
+    # with the size of its input.
+    keys = np.array_split(keys, 1000)
+    keys = [norm.ppf(x) for x in keys]
+    keys = np.array(keys).flatten()
+
+    keys = (keys - np.min(keys)) / (np.max(keys) - np.min(keys))
+    keys *= 2**63 - 1
+    keys = keys.astype(np.uint64)
+
+    with open("data/normal_600M_uint64", "wb") as f:
+        f.write(struct.pack("Q", len(keys)))
+        keys.tofile(f)
+
+if not os.path.exists("data/normal_800M_uint64"):
+    print("64 bit...")
+    keys = np.linspace(0, 1, 4*NUM_KEYS + 2)[1:-1]
+
+    # for some reason, the PPF function seems to use quadratic memory
+    # with the size of its input.
+    keys = np.array_split(keys, 1000)
+    keys = [norm.ppf(x) for x in keys]
+    keys = np.array(keys).flatten()
+
+    keys = (keys - np.min(keys)) / (np.max(keys) - np.min(keys))
+    keys *= 2**63 - 1
+    keys = keys.astype(np.uint64)
+
+    with open("data/normal_800M_uint64", "wb") as f:
+        f.write(struct.pack("Q", len(keys)))
+        keys.tofile(f)
 
 print("Generating log normal data...")
 if not os.path.exists("data/lognormal_200M_uint32"):

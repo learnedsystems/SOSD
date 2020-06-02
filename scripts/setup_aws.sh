@@ -21,7 +21,7 @@ cd SOSD
 echo "Installing software..."
 export DEBIAN_FRONTEND=noninteractive
 sudo apt update -y
-sudo apt install -y python3-pip cmake linux-tools-common linux-tools-aws libboost-all-dev m4
+sudo apt install -y python3-pip cmake linux-tools-common linux-tools-aws libboost-all-dev m4 zstd
 pip3 install --user numpy scipy scikit-learn jupyterlab pandas matplotlib
 curl https://sh.rustup.rs -sSf | sh -s -- -y
 source $HOME/.cargo/env
