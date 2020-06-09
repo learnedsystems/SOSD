@@ -1,0 +1,25 @@
+kind: pipeline
+type: docker
+name: default
+
+steps:
+  - name: build
+    image: ryanmarcus/sosd:v0
+    volumes:
+      - name: cache
+        path: /tmp/cache
+      - name: scratch
+        path: /tmp/scratch
+    commands:
+      - ln -s /tmp/cache data
+      - ln -s /tmp/scratch rmi_data
+      - scripts/download.sh
+      - scripts/build_rmis.sh
+      - scripts/prepare.sh
+
+volumes:
+  - name: cache
+    host:
+      path: /media/Berrik/sosd_cache
+  - name: scratch
+    temp: {}

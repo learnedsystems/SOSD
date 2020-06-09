@@ -10,6 +10,8 @@
 Search on Sorted Data Benchmark
 ====
 
+[![Build Status](https://drone.rm.cab/api/badges/learnedsystems/SOSD/status.svg)](https://drone.rm.cab/learnedsystems/SOSD)
+
 [SOSD](https://learned.systems/papers/sosd.pdf) is a benchmark to compare (learned) index structures on equality lookup performance.
 It comes with state-of-the-art baseline implementations to compare against and many datasets to compare on.
 Each dataset consists of 200 million 32-bit or 64-bit unsigned integers.

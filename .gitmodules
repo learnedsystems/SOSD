@@ -1,9 +1,9 @@
 [submodule "RMI"]
 	path = RMI
-	url = git@github.com:learnedsystems/RMI.git
+	url = https://github.com/learnedsystems/RMI
 [submodule "competitors/FST"]
 	path = competitors/FST
-	url = git@github.com:Christoph-Maximilian/FST.git
+	url = https://github.com/Christoph-Maximilian/FST
 [submodule "competitors/PGM-index"]
 	path = competitors/PGM-index
 	url = https://github.com/gvinciguerra/PGM-index
