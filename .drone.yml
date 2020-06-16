@@ -12,9 +12,10 @@ steps:
         path: /tmp/scratch
     commands:
       - ln -s /tmp/cache data
+      - ln -s /tmp/cache/rmi.tar.zst rmi.tar.zst
       - ln -s /tmp/scratch rmi_data
       - scripts/download.sh
-      - scripts/build_rmis.sh
+      - scripts/download_rmis.sh
       - scripts/prepare.sh
       - build/benchmark data/books_200M_uint64 data/books_200M_uint64_equality_lookups_1M
 

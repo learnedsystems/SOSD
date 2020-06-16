@@ -24,6 +24,7 @@ We provide a number of scripts to automate things. Each is located in the `scrip
 
 * `scripts/download.sh` downloads and stores required data from the Internet
 * `scripts/build_rmis.sh` compiles and builds the RMIs for each dataset
+  * `scripts/download_rmis.sh` will download pre-built RMIs instead, which may be faster. You'll need to run `build_rmis.sh` if you want to measure build times on your platform.
 * `scripts/prepare.sh` constructs query workloads and compiles the benchmark
 * `scripts/execute.sh` executes the benchmark on each workload, storing the results in `results`
 
