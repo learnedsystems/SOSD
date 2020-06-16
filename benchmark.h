@@ -3,6 +3,7 @@
 #include "util.h"
 #include "utils/perf_event.h"
 #include "searches/branching_binary_search.h"
+#include "config.h"
 
 #include <algorithm>
 #include <sstream>
@@ -91,26 +92,35 @@ class Benchmark {
     build_ns_ = index.Build(index_data_);
     
     // Do equality lookups.
-    if (perf) {
-      checkLinux(({
-        BenchmarkParameters params;
-        params.setParam("index", index.name());
-        params.setParam("variant", index.variant());
-        PerfEventBlock e(lookups_.size(), params,/*printHeader=*/first_run_);
+    if constexpr (!sosd_config::fast_mode) {
+      if (perf) {
+        checkLinux(({
+              BenchmarkParameters params;
+              params.setParam("index", index.name());
+              params.setParam("variant", index.variant());
+              PerfEventBlock e(lookups_.size(), params,/*printHeader=*/first_run_);
+              DoEqualityLookups<Index, false, false, false>(index);
+            }));
+      } else if (cold_cache) {
+        if (num_threads_ > 1)
+          util::fail("cold cache not supported with multiple threads");
+        DoEqualityLookups<Index, true, false, true>(index);
+        PrintResult(index);
+      } else if (fence) {
+        DoEqualityLookups<Index, false, true, false>(index);
+        PrintResult(index);
+      } else {
         DoEqualityLookups<Index, false, false, false>(index);
-      }));
-    } else if (cold_cache) {
-      if (num_threads_ > 1)
-        util::fail("cold cache not supported with multiple threads");
-      DoEqualityLookups<Index, true, false, true>(index);
-      PrintResult(index);
-    } else if (fence) {
-      DoEqualityLookups<Index, false, true, false>(index);
-      PrintResult(index);
+        PrintResult(index);
+      }
     } else {
+      if (perf || cold_cache || fence) {
+        util::fail("Perf, cold cache, and fence mode require fulll builds. Disable fast mode.");
+      }
       DoEqualityLookups<Index, false, false, false>(index);
       PrintResult(index);
     }
+    
     
     first_run_ = false;
   }

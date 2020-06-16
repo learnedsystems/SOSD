@@ -27,6 +27,8 @@ We provide a number of scripts to automate things. Each is located in the `scrip
 * `scripts/prepare.sh` constructs query workloads and compiles the benchmark
 * `scripts/execute.sh` executes the benchmark on each workload, storing the results in `results`
 
+Build times can be long, as we make aggressive use of templates to ensure we do not accidentally measure vtable lookup time. For development, this can be annoying: you can set `USE_FAST_MODE` in `config.h` to disable some features and get a faster build time.
+
 ## Cite
 
 If you use this benchmark in your own work, please cite our paper:

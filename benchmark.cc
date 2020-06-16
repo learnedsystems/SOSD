@@ -12,6 +12,7 @@
 #include "benchmarks/benchmark_wormhole.h"
 #include "util.h"
 #include "utils/cxxopts.hpp"
+#include "config.h"
 
 #include "competitors/binary_search.h"
 #include "competitors/hash.h"
@@ -24,7 +25,7 @@
 using namespace std;
 
 #define check_only(tag, code) if ((!only_mode) || only == tag) { code; }
-#define add_search_type(name, func, type, search_class) { if (search_type == (name)) { auto search = search_class<type>(); sosd::Benchmark<type, search_class> benchmark(filename, lookups, num_repeats, perf, build, fence, cold_cache, track_errors, num_threads, search); func(benchmark, pareto, only_mode, only, filename); } }
+#define add_search_type(name, func, type, search_class) { if (search_type == (name)) { auto search = search_class<type>(); sosd::Benchmark<type, search_class> benchmark(filename, lookups, num_repeats, perf, build, fence, cold_cache, track_errors, num_threads, search); func(benchmark, pareto, only_mode, only, filename); found_search_type = true; break; } }
 
 template<class Benchmark>
 void execute_32_bit(Benchmark benchmark, bool pareto,
@@ -149,26 +150,39 @@ int main(int argc, char* argv[]) {
 
   // Pin main thread to core 0.
   util::set_cpu_affinity(0);
+  bool found_search_type = false;
 
   switch (type) {
     case DataType::UINT32: {
       // Create benchmark.
-      add_search_type("binary", execute_32_bit, uint32_t, BranchingBinarySearch);
-      add_search_type("branchless_binary", execute_32_bit, uint32_t, BranchlessBinarySearch);
-      add_search_type("linear", execute_32_bit, uint32_t, LinearSearch);
-      add_search_type("interpolation", execute_32_bit, uint32_t, InterpolationSearch);
-
+      if constexpr (sosd_config::fast_mode) {
+        util::fail("32-bit is not supported when SOSD is built with fast mode");
+      } else {
+        add_search_type("binary", execute_32_bit, uint32_t, BranchingBinarySearch);
+        add_search_type("branchless_binary", execute_32_bit, uint32_t, BranchlessBinarySearch);
+        add_search_type("linear", execute_32_bit, uint32_t, LinearSearch);
+        add_search_type("interpolation", execute_32_bit, uint32_t, InterpolationSearch);
+      }
+      
       break;
 
     }
     case DataType::UINT64: {
       // Create benchmark.
-      add_search_type("binary", execute_64_bit, uint64_t, BranchingBinarySearch);
-      add_search_type("branchless_binary", execute_64_bit, uint64_t, BranchlessBinarySearch);
-      add_search_type("linear", execute_64_bit, uint64_t, LinearSearch);
-      add_search_type("interpolation", execute_64_bit, uint64_t, InterpolationSearch);
+      if constexpr (sosd_config::fast_mode) {
+        add_search_type("binary", execute_64_bit, uint64_t, BranchingBinarySearch);
+      } else {
+        add_search_type("binary", execute_64_bit, uint64_t, BranchingBinarySearch);
+        add_search_type("branchless_binary", execute_64_bit, uint64_t, BranchlessBinarySearch);
+        add_search_type("linear", execute_64_bit, uint64_t, LinearSearch);
+        add_search_type("interpolation", execute_64_bit, uint64_t, InterpolationSearch);
+      }
       break;
     }
+  }
+
+  if (!found_search_type) {
+    std::cerr << "Specified search type is not implemented in this build. Disable fast mode for other search types." << std::endl;
   }
 
   return 0;
