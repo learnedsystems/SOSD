@@ -115,7 +115,7 @@ class Benchmark {
       }
     } else {
       if (perf || cold_cache || fence) {
-        util::fail("Perf, cold cache, and fence mode require fulll builds. Disable fast mode.");
+        util::fail("Perf, cold cache, and fence mode require full builds. Disable fast mode.");
       }
       DoEqualityLookups<Index, false, false, false>(index);
       PrintResult(index);
