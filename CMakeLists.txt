@@ -25,9 +25,14 @@ endif ()
 set(SOURCE_FILES util.h)
 file(GLOB_RECURSE RMI_SOURCES "competitors/rmi/*.cpp")
 file(GLOB_RECURSE BENCH_SOURCES "benchmarks/*.cc")
-if (${APPLE})
-    # FIXME cannot link.
+
+if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 10.0)
+    # FIXME cannot link with g++-9
+    add_definitions(-DDISABLE_FST=1)
     list(REMOVE_ITEM BENCH_SOURCES "${CMAKE_SOURCE_DIR}/benchmarks/benchmark_fst.cc")
+endif ()
+
+if (${APPLE})
     # Certain headers (e.g., byteswap) not supported under Mac OS.
     list(REMOVE_ITEM BENCH_SOURCES "${CMAKE_SOURCE_DIR}/benchmarks/benchmark_wormhole.cc")
 endif ()
@@ -57,11 +62,6 @@ target_include_directories(benchmark
         PRIVATE "competitors/FST/include"
         private "competitors/PGM-index/include"
         PRIVATE "fast64")
-target_link_libraries(benchmark
-        PRIVATE Threads::Threads dtl
-        PRIVATE dl
-        PRIVATE ${CMAKE_SOURCE_DIR}/fast64/target/release/libfast64.a
-        PRIVATE tsl::robin_map)
 add_dependencies(benchmark libfast64)
 
 if (${LINUX})
@@ -69,3 +69,9 @@ if (${LINUX})
     target_link_libraries(benchmark PRIVATE ${CMAKE_SOURCE_DIR}/wormhole/libwh.so)
     add_dependencies(benchmark libwh)
 endif ()
+
+target_link_libraries(benchmark
+        PRIVATE ${CMAKE_SOURCE_DIR}/fast64/target/release/libfast64.a
+        PRIVATE tsl::robin_map
+        PRIVATE Threads::Threads dtl
+        PRIVATE dl)

@@ -39,7 +39,9 @@ void execute_32_bit(Benchmark benchmark, bool pareto,
   check_only("IBTree", benchmark_32_ibtree(benchmark, pareto));
   check_only("FAST", benchmark_32_fast(benchmark, pareto));
 #ifndef __APPLE__
+  #ifndef DISABLE_FST
   check_only("FST", benchmark_32_fst(benchmark, pareto));
+  #endif
   check_only("Wormhole", benchmark_32_wormhole(benchmark, pareto));
 #endif
 
@@ -64,7 +66,9 @@ void execute_64_bit(Benchmark benchmark, bool pareto,
   check_only("IBTree", benchmark_64_ibtree(benchmark, pareto));
   check_only("FAST", benchmark_64_fast(benchmark, pareto));
 #ifndef __APPLE__
+  #ifndef DISABLE_FST
   check_only("FST", benchmark_64_fst(benchmark, pareto));
+  #endif
   check_only("Wormhole", benchmark_64_wormhole(benchmark, pareto));
 #endif
 
