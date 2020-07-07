@@ -23,9 +23,6 @@ class RadixSpline : public Competitor {
     }
     
     data_ = data;
-    if (truncate_by != 0) {
-      data_.erase(data_.end() - truncate_by, data_.end());
-    }
     
     data_size = data_.size();
     max_key_ = data_.back().key;
@@ -43,12 +40,7 @@ class RadixSpline : public Competitor {
   }
 
   SearchBound EqualityLookup(const KeyType lookup_key) const
-  {
-    if (lookup_key > max_key_) {
-      // The last key in the spline is always == last key in data, if the search key is larger it has to be in the truncated range
-      return (SearchBound) { data_.size(), data_.size() + truncate_by };
-    }
-    
+  {    
     uint64_t est_error = max_error + extra_fp_error;
     
     uint64_t estimate = segmentInterpolation(process(lookup_key), lookup_key);
@@ -190,17 +182,16 @@ class RadixSpline : public Competitor {
     
     // Fb
     if (cut == "fb_200M_uint64" || cut == "fb_200M_uint32") {
-      truncate_by = 200;
-      if (size_scale == 1) set_tuning(2, 25);
-      if (size_scale == 2) set_tuning(4, 22);
-      if (size_scale == 3) set_tuning(10, 20);
-      if (size_scale == 4) set_tuning(32, 18);
-      if (size_scale == 5) set_tuning(128, 18);
-      if (size_scale == 6) set_tuning(512, 15);
-      if (size_scale == 7) set_tuning(1024, 14);
-      if (size_scale == 8) set_tuning(2*1024, 12);
-      if (size_scale == 9) set_tuning(2*2048, 3);
-      if (size_scale == 10) set_tuning(2*4096, 3);
+      if (size_scale == 1) set_tuning(2, 1);
+      if (size_scale == 2) set_tuning(4, 1);
+      if (size_scale == 3) set_tuning(10, 1);
+      if (size_scale == 4) set_tuning(32, 1);
+      if (size_scale == 5) set_tuning(128, 1);
+      if (size_scale == 6) set_tuning(512, 1);
+      if (size_scale == 7) set_tuning(1024, 1);
+      if (size_scale == 8) set_tuning(2*1024, 1);
+      if (size_scale == 9) set_tuning(2*2048, 1);
+      if (size_scale == 10) set_tuning(2*4096, 1);
       
     }
     return true;
@@ -213,7 +204,6 @@ class RadixSpline : public Competitor {
   uint64_t max_error;
   uint64_t extra_fp_error;
   bool use_errors;
-  size_t truncate_by = 0;
   KeyType max_key_;
   
 
