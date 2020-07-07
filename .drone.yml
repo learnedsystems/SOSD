@@ -18,6 +18,9 @@ steps:
       - scripts/download_rmis.sh
       - scripts/prepare.sh
       - build/benchmark data/books_200M_uint64 data/books_200M_uint64_equality_lookups_1M
+      - build/benchmark data/fb_200M_uint64 data/fb_200M_uint64_equality_lookups_1M
+      - build/benchmark data/osm_cellids_200M_uint64 data/osm_cellids_200M_uint64_equality_lookups_1M
+      - build/benchmark data/wiki_ts_200M_uint64 data/wiki_ts_200M_uint64_equality_lookups_1M
 
 volumes:
   - name: cache
