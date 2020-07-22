@@ -20,8 +20,8 @@ class RS : public Competitor {
       }
       rs::Builder<KeyType> rsb(min, max, num_radix_bits_, max_error_);
       for (const auto& key_and_value : data) rsb.AddKey(key_and_value.key);
-      rs_ = std::make_unique<rs::RadixSpline<KeyType>>
-      (rsb.Finalize());
+      rs_ = std::make_unique<rs::RadixSpline<KeyType>>;
+      rsb.Finalize();
     });
   }
 
@@ -161,7 +161,8 @@ class RS : public Competitor {
       return configs[size_scale - 1];
     }
 
-    util::fail("No tuning config for this file and size_scale");
+    std::cerr << "No tuning config for this file and size_scale" << std::endl;
+    throw;
   }
 
   void SetParameters(const std::string& dataset) {
