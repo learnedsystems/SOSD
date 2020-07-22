@@ -20,7 +20,7 @@ class RS : public Competitor {
       }
       rs::Builder<KeyType> rsb(min, max, num_radix_bits_, max_error_);
       for (const auto& key_and_value : data) rsb.AddKey(key_and_value.key);
-      rs_ = std::make_unique<rs::RadixSpline<KeyType>>;
+      rs_ = std::make_unique<rs::RadixSpline<KeyType>>();
       rsb.Finalize();
     });
   }
