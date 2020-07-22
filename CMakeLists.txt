@@ -60,7 +60,8 @@ add_executable(benchmark benchmark.cc ${SOURCE_FILES} ${RMI_SOURCES} ${BENCH_SOU
 target_include_directories(benchmark
         PRIVATE "competitors/stx-btree-0.9/include"
         PRIVATE "competitors/FST/include"
-        private "competitors/PGM-index/include"
+        PRIVATE "competitors/PGM-index/include"
+        PRIVATE "competitors/rs/include"
         PRIVATE "fast64")
 add_dependencies(benchmark libfast64)
 

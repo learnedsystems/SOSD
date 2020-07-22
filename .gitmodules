@@ -7,6 +7,9 @@
 [submodule "competitors/PGM-index"]
 	path = competitors/PGM-index
 	url = https://github.com/gvinciguerra/PGM-index
+[submodule "competitors/rs"]
+	path = competitors/rs
+	url = git@github.com:learnedsystems/RadixSpline.git
 [submodule "fast64"]
 	path = fast64
 	url = https://github.com/RyanMarcus/fast64.git
