@@ -60,6 +60,20 @@ class RS : public Competitor {
     using Configs = const std::vector<std::pair<size_t, size_t>>;
 
     // Books (or amazon in the paper)
+    if (dataset == "books_200M_uint32") {
+      Configs configs = {{26, 3},
+                         {22, 3},
+                         {20, 5},
+                         {23, 15},
+                         {22, 25},
+                         {20, 30},
+                         {16, 40},
+                         {19, 95},
+                         {15, 95},
+                         {9, 135}};
+      return configs[size_scale - 1];
+    }
+
     if (dataset == "books_200M_uint64") {
       Configs configs = {{25, 2},
                          {22, 4},
