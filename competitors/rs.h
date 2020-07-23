@@ -20,12 +20,12 @@ class RS : public Competitor {
       }
       rs::Builder<KeyType> rsb(min, max, num_radix_bits_, max_error_);
       for (const auto& key_and_value : data) rsb.AddKey(key_and_value.key);
-      rs_ = std::make_unique<rs::RadixSpline<KeyType>>(rsb.Finalize());
+      rs_ = rsb.Finalize();
     });
   }
 
   SearchBound EqualityLookup(const KeyType lookup_key) const {
-    const rs::SearchBound sb = rs_->GetSearchBound(lookup_key);
+    const rs::SearchBound sb = rs_.GetSearchBound(lookup_key);
     return {sb.begin, sb.end};
   }
 
@@ -34,7 +34,7 @@ class RS : public Competitor {
   }
 
   std::size_t size() const {
-    return rs_->GetSize();
+    return rs_.GetSize();
   }
 
   bool applicable(bool _unique, const std::string& data_filename) {
@@ -185,7 +185,7 @@ class RS : public Competitor {
     parameters_set_ = true;
   }
 
-  std::unique_ptr<rs::RadixSpline<KeyType>> rs_;
+  rs::RadixSpline<KeyType> rs_;
   size_t num_radix_bits_;
   size_t max_error_;
   bool parameters_set_ = false;
