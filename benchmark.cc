@@ -25,7 +25,7 @@
 using namespace std;
 
 #define check_only(tag, code) if ((!only_mode) || only == tag) { code; }
-#define add_search_type(name, func, type, search_class) { if (search_type == (name)) { auto search = search_class<type>(); sosd::Benchmark<type, search_class> benchmark(filename, lookups, num_repeats, perf, build, fence, cold_cache, track_errors, num_threads, search); func(benchmark, pareto, only_mode, only, filename); found_search_type = true; break; } }
+#define add_search_type(name, func, type, search_class) { if (search_type == (name)) { auto search = search_class<type>(); sosd::Benchmark<type, search_class> benchmark(filename, lookups, dataset, num_repeats, perf, build, fence, cold_cache, track_errors, csv, num_threads, search); func(benchmark, pareto, only_mode, only, filename); found_search_type = true; break; } }
 
 template<class Benchmark>
 void execute_32_bit(Benchmark benchmark, bool pareto,
@@ -85,6 +85,7 @@ int main(int argc, char* argv[]) {
   options.add_options()
       ("data", "Data file with keys", cxxopts::value<std::string>())
       ("lookups", "Lookup key (query) file", cxxopts::value<std::string>())
+      ("dataset", "Dataset name", cxxopts::value<std::string>())
       ("help", "Displays help")
       ("r,repeats",
        "Number of repeats",
@@ -100,6 +101,7 @@ int main(int argc, char* argv[]) {
       ("pareto", "Run with multiple different sizes for each competitor")
       ("fence", "Execute a memory barrier between each lookup")
       ("errors", "Tracks index errors, and report those instead of lookup times")
+      ("csv", "Output a CSV of results in addition to a text file")
       ("search",
        "Specify a search type, one of: binary, branchless_binary, linear, interpolation",
        cxxopts::value<std::string>()->default_value("binary"))
@@ -107,7 +109,7 @@ int main(int argc, char* argv[]) {
        "extra positional arguments",
        cxxopts::value<std::vector<std::string>>());
 
-  options.parse_positional({"data", "lookups", "positional"});
+  options.parse_positional({"data", "lookups", "dataset", "positional"});
 
   const auto result = options.parse(argc, argv);
 
@@ -127,9 +129,11 @@ int main(int argc, char* argv[]) {
   const bool fence = result.count("fence");
   const bool track_errors = result.count("errors");
   const bool cold_cache = result.count("cold-cache");
+  const bool csv = result.count("csv");
   const bool pareto = result.count("pareto");
   const std::string filename = result["data"].as<std::string>();
   const std::string lookups = result["lookups"].as<std::string>();
+  const std::string dataset = result["dataset"].as<std::string>();
   const std::string search_type = result["search"].as<std::string>();
   const bool only_mode = result.count("only") || std::getenv("SOSD_ONLY");
   std::string only;

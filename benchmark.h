@@ -9,6 +9,8 @@
 #include <sstream>
 #include <math.h>
 #include <immintrin.h>
+#include <iostream>
+#include <fstream>
 
 #include <dtl/thread.hpp>
 
@@ -36,17 +38,19 @@ class Benchmark {
  public:
   Benchmark(const std::string& data_filename,
             const std::string& lookups_filename,
+	    const std::string& dataset_name,
             const size_t num_repeats,
             const bool perf, const bool build, const bool fence,
             const bool cold_cache, const bool track_errors,
-            const size_t num_threads,
+            const bool csv, const size_t num_threads,
             const SearchClass<KeyType> searcher)
       : data_filename_(data_filename),
         lookups_filename_(lookups_filename),
+	dataset_name_(dataset_name),
         num_repeats_(num_repeats),
         first_run_(true), perf(perf), build(build), fence(fence),
         cold_cache(cold_cache), track_errors(track_errors),
-        num_threads_(num_threads),
+        csv(csv), num_threads_(num_threads),
         searcher(searcher) {
     
     if ((int)cold_cache + (int)perf + (int)fence > 1) {
@@ -322,12 +326,81 @@ private:
                 << "," << searcher.name()
                 << std::endl;
     }
+    if (csv) {
+      PrintResultCSV(index);
+    }
+  }
+
+  template<class Index>
+  void PrintResultCSV(const Index& index) {
+    std::string filename = "./results/" + dataset_name_ + "_results_table.csv";
+
+    std::ofstream fout(filename, std::ofstream::out | std::ofstream::app);
+
+    if (!fout.is_open()) {
+      std::cerr << "Failure to print CSV on " << filename << std::endl;
+      return;
+    }
+
+    if (track_errors) {
+      fout << index.name()
+           << "," << index.variant()
+           << "," << log_sum_search_bound_
+           << "," << l1_sum_search_bound_
+           << "," << l2_sum_search_bound_
+           << std::endl;
+      return;
+    }
+
+    if (build) {
+      fout << index.name()
+           << "," << index.variant()
+           << "," << build_ns_
+           << "," << index.size()
+           << std::endl;
+      return;
+    }
+
+    if (cold_cache) {
+      double ns_per = ((double)individual_ns_sum) / ((double)lookups_.size());
+      fout << index.name()
+           << "," << index.variant()
+           << "," << ns_per
+           << "," << index.size()
+           << "," << build_ns_
+           << "," << searcher.name()
+           << std::endl;
+      return;
+    }
+
+    // print main results
+    std::ostringstream all_times;
+    for (unsigned int i = 0; i < runs_.size(); ++i) {
+      const double ns_per_lookup = static_cast<double>(runs_[i])
+        /lookups_.size();
+      all_times << "," << ns_per_lookup;
+    }
+
+    // don't print a line if (the first) run failed
+    if (runs_[0]!=0) {
+      fout << index.name()
+           << "," << index.variant()
+           << all_times.str() // has a leading comma
+           << "," << index.size()
+           << "," << build_ns_
+           << "," << searcher.name()
+           << std::endl;
+    }
+    
+    fout.close();
+    return;
   }
 
   uint64_t random_sum = 0;
   uint64_t individual_ns_sum = 0;
   const std::string data_filename_;
   const std::string lookups_filename_;
+  const std::string dataset_name_;
   std::vector<Row<KeyType>> data_;
   std::vector<KeyValue<KeyType>> index_data_;
   bool unique_keys_;
@@ -348,6 +421,7 @@ private:
   bool measure_each;
   bool cold_cache;
   bool track_errors;
+  bool csv;
   // Number of lookup threads.
   const size_t num_threads_;
 
