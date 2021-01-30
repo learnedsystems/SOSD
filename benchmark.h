@@ -50,7 +50,7 @@ class Benchmark {
         num_repeats_(num_repeats),
         first_run_(true), perf(perf), build(build), fence(fence),
         cold_cache(cold_cache), track_errors(track_errors),
-        csv(csv), num_threads_(num_threads),
+        csv_(csv), num_threads_(num_threads),
         searcher(searcher) {
     
     if ((int)cold_cache + (int)perf + (int)fence > 1) {
@@ -326,14 +326,14 @@ private:
                 << "," << searcher.name()
                 << std::endl;
     }
-    if (csv) {
+    if (csv_) {
       PrintResultCSV(index);
     }
   }
 
   template<class Index>
   void PrintResultCSV(const Index& index) {
-    std::string filename = "./results/" + dataset_name_ + "_results_table.csv";
+    const std::string filename = "./results/" + dataset_name_ + "_results_table.csv";
 
     std::ofstream fout(filename, std::ofstream::out | std::ofstream::app);
 
@@ -418,10 +418,10 @@ private:
   bool perf;
   bool build;
   bool fence;
-  bool measure_each;
+  bool measure_each_;
   bool cold_cache;
   bool track_errors;
-  bool csv;
+  bool csv_;
   // Number of lookup threads.
   const size_t num_threads_;
 

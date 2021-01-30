@@ -26,7 +26,7 @@ We provide a number of scripts to automate things. Each is located in the `scrip
 * `scripts/build_rmis.sh` compiles and builds the RMIs for each dataset
   * `scripts/download_rmis.sh` will download pre-built RMIs instead, which may be faster. You'll need to run `build_rmis.sh` if you want to measure build times on your platform.
 * `scripts/prepare.sh` constructs query workloads and compiles the benchmark
-* `scripts/execute.sh` executes the benchmark on each workload, storing the results in `results`
+* `scripts/execute.sh` executes the benchmark on each workload, storing the results in `results`. You can use the `-c` flag to output a .csv file of results rather than a .txt.
 
 Build times can be long, as we make aggressive use of templates to ensure we do not accidentally measure vtable lookup time. For development, this can be annoying: you can set `USE_FAST_MODE` in `config.h` to disable some features and get a faster build time.
 
