@@ -389,12 +389,12 @@ private:
            << "," << index.size()
            << "," << build_ns_
            << "," << searcher.name()
+	   << "," << dataset_name_
            << std::endl;
     }
     
     fout.close();
     return;
-  }
 
   uint64_t random_sum = 0;
   uint64_t individual_ns_sum = 0;
