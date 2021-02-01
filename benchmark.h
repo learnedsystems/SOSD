@@ -38,7 +38,6 @@ class Benchmark {
  public:
   Benchmark(const std::string& data_filename,
             const std::string& lookups_filename,
-	    const std::string& dataset_name,
             const size_t num_repeats,
             const bool perf, const bool build, const bool fence,
             const bool cold_cache, const bool track_errors,
@@ -46,7 +45,6 @@ class Benchmark {
             const SearchClass<KeyType> searcher)
       : data_filename_(data_filename),
         lookups_filename_(lookups_filename),
-	dataset_name_(dataset_name),
         num_repeats_(num_repeats),
         first_run_(true), perf(perf), build(build), fence(fence),
         cold_cache(cold_cache), track_errors(track_errors),
@@ -56,6 +54,10 @@ class Benchmark {
     if ((int)cold_cache + (int)perf + (int)fence > 1) {
       util::fail("Can only specify one of cold cache, perf counters, or fence.");
     }
+
+    static constexpr const char* prefix = "data/";
+    dataset_name_ = data_filename.data();
+    dataset_name_.erase(dataset_name_.begin(), dataset_name_.begin() + dataset_name_.find(prefix) + strlen(prefix));
     
     // Load data.
     std::vector<KeyType> keys = util::load_data<KeyType>(data_filename_);
@@ -298,7 +300,7 @@ private:
     
     
     if (cold_cache) {
-      double ns_per = ((double)individual_ns_sum) / ((double)lookups_.size());
+      const double ns_per = (static_cast<double>(individual_ns_sum)) / (static_cast<double>(lookups_.size()));
       std::cout << "RESULT: " << index.name()
                 << "," << index.variant()
                 << "," << ns_per
@@ -362,7 +364,7 @@ private:
     }
 
     if (cold_cache) {
-      double ns_per = ((double)individual_ns_sum) / ((double)lookups_.size());
+      const double ns_per = (static_cast<double>(individual_ns_sum)) / (static_cast<double>(lookups_.size()));
       fout << index.name()
            << "," << index.variant()
            << "," << ns_per
@@ -373,19 +375,27 @@ private:
       return;
     }
 
-    // print main results
-    std::ostringstream all_times;
+    // compute median time
+    std::vector<double> times;
+    double median_time;
     for (unsigned int i = 0; i < runs_.size(); ++i) {
       const double ns_per_lookup = static_cast<double>(runs_[i])
         /lookups_.size();
-      all_times << "," << ns_per_lookup;
+      times.push_back(ns_per_lookup);
+    }
+    std::sort(times.begin(), times.end());
+    if (times.size() % 2 == 0) {
+      median_time = 0.5 * (times[times.size() / 2 - 1] + times[times.size() / 2]);
+    }
+    else {
+      median_time = times[times.size() / 2];
     }
 
     // don't print a line if (the first) run failed
     if (runs_[0]!=0) {
       fout << index.name()
            << "," << index.variant()
-           << all_times.str() // has a leading comma
+           << "," << median_time
            << "," << index.size()
            << "," << build_ns_
            << "," << searcher.name()
@@ -395,12 +405,13 @@ private:
     
     fout.close();
     return;
+  }
 
   uint64_t random_sum = 0;
   uint64_t individual_ns_sum = 0;
   const std::string data_filename_;
   const std::string lookups_filename_;
-  const std::string dataset_name_;
+  std::string dataset_name_;
   std::vector<Row<KeyType>> data_;
   std::vector<KeyValue<KeyType>> index_data_;
   bool unique_keys_;
