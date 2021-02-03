@@ -9,6 +9,8 @@
 #include <sstream>
 #include <math.h>
 #include <immintrin.h>
+#include <iostream>
+#include <fstream>
 
 #include <dtl/thread.hpp>
 
@@ -39,19 +41,23 @@ class Benchmark {
             const size_t num_repeats,
             const bool perf, const bool build, const bool fence,
             const bool cold_cache, const bool track_errors,
-            const size_t num_threads,
+            const bool csv, const size_t num_threads,
             const SearchClass<KeyType> searcher)
       : data_filename_(data_filename),
         lookups_filename_(lookups_filename),
         num_repeats_(num_repeats),
         first_run_(true), perf(perf), build(build), fence(fence),
         cold_cache(cold_cache), track_errors(track_errors),
-        num_threads_(num_threads),
+        csv_(csv), num_threads_(num_threads),
         searcher(searcher) {
     
     if ((int)cold_cache + (int)perf + (int)fence > 1) {
       util::fail("Can only specify one of cold cache, perf counters, or fence.");
     }
+
+    static constexpr const char* prefix = "data/";
+    dataset_name_ = data_filename.data();
+    dataset_name_.erase(dataset_name_.begin(), dataset_name_.begin() + dataset_name_.find(prefix) + strlen(prefix));
     
     // Load data.
     std::vector<KeyType> keys = util::load_data<KeyType>(data_filename_);
@@ -294,7 +300,7 @@ private:
     
     
     if (cold_cache) {
-      double ns_per = ((double)individual_ns_sum) / ((double)lookups_.size());
+      const double ns_per = (static_cast<double>(individual_ns_sum)) / (static_cast<double>(lookups_.size()));
       std::cout << "RESULT: " << index.name()
                 << "," << index.variant()
                 << "," << ns_per
@@ -322,12 +328,90 @@ private:
                 << "," << searcher.name()
                 << std::endl;
     }
+    if (csv_) {
+      PrintResultCSV(index);
+    }
+  }
+
+  template<class Index>
+  void PrintResultCSV(const Index& index) {
+    const std::string filename = "./results/" + dataset_name_ + "_results_table.csv";
+
+    std::ofstream fout(filename, std::ofstream::out | std::ofstream::app);
+
+    if (!fout.is_open()) {
+      std::cerr << "Failure to print CSV on " << filename << std::endl;
+      return;
+    }
+
+    if (track_errors) {
+      fout << index.name()
+           << "," << index.variant()
+           << "," << log_sum_search_bound_
+           << "," << l1_sum_search_bound_
+           << "," << l2_sum_search_bound_
+           << std::endl;
+      return;
+    }
+
+    if (build) {
+      fout << index.name()
+           << "," << index.variant()
+           << "," << build_ns_
+           << "," << index.size()
+           << std::endl;
+      return;
+    }
+
+    if (cold_cache) {
+      const double ns_per = (static_cast<double>(individual_ns_sum)) / (static_cast<double>(lookups_.size()));
+      fout << index.name()
+           << "," << index.variant()
+           << "," << ns_per
+           << "," << index.size()
+           << "," << build_ns_
+           << "," << searcher.name()
+           << std::endl;
+      return;
+    }
+
+    // compute median time
+    std::vector<double> times;
+    double median_time;
+    for (unsigned int i = 0; i < runs_.size(); ++i) {
+      const double ns_per_lookup = static_cast<double>(runs_[i])
+        /lookups_.size();
+      times.push_back(ns_per_lookup);
+    }
+    std::sort(times.begin(), times.end());
+    if (times.size() % 2 == 0) {
+      median_time = 0.5 * (times[times.size() / 2 - 1] + times[times.size() / 2]);
+    }
+    else {
+      median_time = times[times.size() / 2];
+    }
+
+    // don't print a line if (the first) run failed
+    if (runs_[0]!=0) {
+      fout << index.name()
+           << "," << index.variant()
+           << "," << median_time
+           << "," << index.size()
+           << "," << build_ns_
+           << "," << searcher.name()
+	   << "," << dataset_name_
+           << std::endl;
+    }
+    
+    fout.close();
+    return;
   }
 
   uint64_t random_sum = 0;
   uint64_t individual_ns_sum = 0;
   const std::string data_filename_;
   const std::string lookups_filename_;
+  std::string dataset_name_;
   std::vector<Row<KeyType>> data_;
   std::vector<KeyValue<KeyType>> index_data_;
   bool unique_keys_;
@@ -345,9 +429,10 @@ private:
   bool perf;
   bool build;
   bool fence;
-  bool measure_each;
+  bool measure_each_;
   bool cold_cache;
   bool track_errors;
+  bool csv_;
   // Number of lookup threads.
   const size_t num_threads_;
 
