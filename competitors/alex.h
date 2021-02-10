@@ -1,17 +1,14 @@
 #pragma once
 
-#include <utility>
-#include "../utils/tracking_allocator.h"
 #include "base.h"
 #include "./ALEX/src/core/alex.h"
 #include "./ALEX/src/core/alex_base.h"
 
+#include <utility>
+
 template<class KeyType, int size_scale>
 class Alex : public Competitor {
 public:
-  Alex() : map_(TrackingAllocator<std::pair<KeyType, uint64_t>>(
-      total_allocation_size)) {
-  }
 
   uint64_t Build(const std::vector<KeyValue<KeyType>>& data) {
     std::vector<std::pair<KeyType, uint64_t>> loading_data;
@@ -61,11 +58,7 @@ public:
   int variant() const { return size_scale; }
 
 private:
-  uint64_t total_allocation_size = 0;
   uint64_t data_size_ = 0;
   alex::Alex<KeyType,
-	     uint64_t,
-	     alex::AlexCompare,
-	     TrackingAllocator<std::pair<KeyType, uint64_t>>,
-	     true > map_;
+	     uint64_t> map_;
 };
