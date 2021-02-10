@@ -18,4 +18,4 @@
 	url = https://github.com/wuxb45/wormhole.git
 [submodule "competitors/ALEX"]
 	path = competitors/ALEX
-	url = git@github.com:microsoft/ALEX
+	url = https://github.com/microsoft/ALEX.git
