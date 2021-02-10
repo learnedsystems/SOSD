@@ -55,7 +55,7 @@ public:
   }
 
   std::size_t size() const {
-    return map_.get_allocator().total_allocation_size + sizeof(*this);
+    return map_.model_size() + map_.data_size();
   }
 
   int variant() const { return size_scale; }
