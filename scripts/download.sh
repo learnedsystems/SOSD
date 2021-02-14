@@ -47,14 +47,14 @@ function main() {
    cd data
 
    # Format: download_file <file_name> <md5_checksum> <url>
-   download_file wiki_ts_200M_uint64 4f1402b1c476d67f77d2da4955432f7d https://dataverse.harvard.edu/api/access/datafile/:persistentId?persistentId=doi:10.7910/DVN/JGVF9A/ULSWQQ 
-   download_file osm_cellids_200M_uint64 01666e42b2d64a55411bdc280ac9d2a3  https://dataverse.harvard.edu/api/access/datafile/:persistentId?persistentId=doi:10.7910/DVN/JGVF9A/CTBUKT 
+   download_file_zst wiki_ts_200M_uint64 4f1402b1c476d67f77d2da4955432f7d https://dataverse.harvard.edu/api/access/datafile/:persistentId?persistentId=doi:10.7910/DVN/JGVF9A/ULSWQQ 
+   download_file_zst osm_cellids_200M_uint64 01666e42b2d64a55411bdc280ac9d2a3  https://dataverse.harvard.edu/api/access/datafile/:persistentId?persistentId=doi:10.7910/DVN/JGVF9A/CTBUKT 
 
-   download_file books_200M_uint32 c4a848fdc56130abdd167d7e6b813843 https://dataverse.harvard.edu/api/access/datafile/:persistentId?persistentId=doi:10.7910/DVN/JGVF9A/MZZUP2 
-   download_file books_200M_uint64 aa88040624be2f508f1ab6f5532ace88 https://dataverse.harvard.edu/api/access/datafile/:persistentId?persistentId=doi:10.7910/DVN/JGVF9A/PDOUMU
+   download_file_zst books_200M_uint32 c4a848fdc56130abdd167d7e6b813843 https://dataverse.harvard.edu/api/access/datafile/:persistentId?persistentId=doi:10.7910/DVN/JGVF9A/MZZUP2 
+   download_file_zst books_200M_uint64 aa88040624be2f508f1ab6f5532ace88 https://dataverse.harvard.edu/api/access/datafile/:persistentId?persistentId=doi:10.7910/DVN/JGVF9A/PDOUMU
 
-   download_file fb_200M_uint32 881eacb62c38eb8c2fdd4d59706b70a7 https://dataverse.harvard.edu/api/access/datafile/:persistentId?persistentId=doi:10.7910/DVN/JGVF9A/GXH3ZC 
-   download_file fb_200M_uint64 407a23758b72e3c1ee3f6384d98ce604 https://dataverse.harvard.edu/api/access/datafile/:persistentId?persistentId=doi:10.7910/DVN/JGVF9A/Y54SI9 
+   download_file_zst fb_200M_uint32 881eacb62c38eb8c2fdd4d59706b70a7 https://dataverse.harvard.edu/api/access/datafile/:persistentId?persistentId=doi:10.7910/DVN/JGVF9A/GXH3ZC 
+   download_file_zst fb_200M_uint64 407a23758b72e3c1ee3f6384d98ce604 https://dataverse.harvard.edu/api/access/datafile/:persistentId?persistentId=doi:10.7910/DVN/JGVF9A/Y54SI9 
    cd ..
    echo "done"
 }
