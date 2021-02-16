@@ -16,7 +16,7 @@ class BinarySearch : public Competitor {
   }
 
   std::string name() const {
-    return "BS";
+    return "BinarySearch";
   }
 
   std::size_t size() const {
