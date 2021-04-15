@@ -32,10 +32,27 @@ Build times can be long, as we make aggressive use of templates to ensure we do 
 
 ## Cite
 
-If you use this benchmark in your own work, please cite our paper:
+If you use this benchmark in your own work, please cite us:
 
 ```
-@article{sosd,
+@article{sosd-vldb,
+  author    = {Ryan Marcus and
+               Andreas Kipf and
+               Alexander van Renen and
+               Mihail Stoian and
+               Sanchit Misra and
+               Alfons Kemper and
+               Thomas Neumann and
+               Tim Kraska},
+  title     = {Benchmarking Learned Indexes},
+  journal   = {Proc. {VLDB} Endow.},
+  volume    = {14},
+  number    = {1},
+  pages     = {1--13},
+  year      = {2020}
+}
+
+@article{sosd-neurips,
   title={SOSD: A Benchmark for Learned Indexes},
   author={Kipf, Andreas and Marcus, Ryan and van Renen, Alexander and Stoian, Mihail and Kemper, Alfons and Kraska, Tim and Neumann, Thomas},
   journal={NeurIPS Workshop on Machine Learning for Systems},
