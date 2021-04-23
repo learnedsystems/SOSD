@@ -82,6 +82,14 @@ class Benchmark {
     for (uint64_t pos = 0; pos < data_.size(); pos++) {
       index_data_.push_back((KeyValue<KeyType>) {data_[pos].key, pos});
     }
+
+     if (cold_cache) {
+        memory.resize(26e6 / 8); // NOTE: L3 size of the machine
+        util::FastRandom ranny(8128);
+        for(uint64_t& iter : memory) {
+           iter = ranny.RandUint32();
+        }
+     }
   }
 
   template<class Index>
@@ -99,6 +107,9 @@ class Benchmark {
     
     // Do equality lookups.
     if constexpr (!sosd_config::fast_mode) {
+      if(track_errors) {
+        return DoLookupsWithErrorTracking(index);
+      }
       if (perf) {
         checkLinux(({
               BenchmarkParameters params;
@@ -169,112 +180,127 @@ private:
   template<class Index, bool time_each, bool fence, bool clear_cache>
   void DoEqualityLookups(Index& index) {
     if (build) return;
-    
-    size_t repeats = num_repeats_;
-    
+
     // Atomic counter used to assign work to threads.
     std::atomic<std::size_t> cntr(0);
     
     bool run_failed = false;
-    
-
-    std::vector<uint64_t> memory(26e6 / 8); // NOTE: L3 size of the machine
-    if (clear_cache) {
-      util::FastRandom ranny(8128);
-      for(uint64_t& iter : memory) {
-        iter = ranny.RandUint32();
-      }
-    }
-
-    
-    // Define function that contains lookup code.
-    auto f = [&](const size_t thread_id) {
-      while (true) {
-        const size_t begin = cntr.fetch_add(batch_size);
-        if (begin >= lookups_.size()) break;
-        for (unsigned int idx = begin; idx < begin + batch_size && idx < lookups_.size();
-             ++idx) {
-          // Compute the actual index for debugging.
-          const volatile uint64_t lookup_key = lookups_[idx].key;
-          const volatile uint64_t expected = lookups_[idx].result;
-          
-          SearchBound bound;
-
-          if (track_errors) {
-            bound = index.EqualityLookup(lookup_key);
-            if (bound.start != bound.stop) {
-              log_sum_search_bound_ += log2((double)(bound.stop - bound.start));
-              l1_sum_search_bound_ += abs((double)(bound.stop - bound.start));
-              l2_sum_search_bound_ += pow((double)(bound.stop - bound.start), 2);
-            }
-          } else {
-            uint64_t actual;
-            size_t qualifying;
-            
-            if (clear_cache) {
-              // Make sure that all cache lines from large buffer are loaded
-              for(uint64_t& iter : memory) {
-                random_sum += iter;
-              }
-              _mm_mfence();
-
-              const auto start = std::chrono::high_resolution_clock::now();
-              bound = index.EqualityLookup(lookup_key);
-              actual = searcher.search(
-                data_, lookup_key,
-                &qualifying,
-                bound.start, bound.stop);
-              if (!CheckResults(actual, expected, lookup_key, bound)) {
-                run_failed = true;
-                return;
-              }
-              const auto end = std::chrono::high_resolution_clock::now();
-            
-              const auto timing = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                end - start).count();
-              individual_ns_sum += timing;
-              
-            } else {
-              // not tracking errors, measure the lookup time.
-              bound = index.EqualityLookup(lookup_key);
-              actual = searcher.search(
-                data_, lookup_key,
-                &qualifying,
-                bound.start, bound.stop);
-              if (!CheckResults(actual, expected, lookup_key, bound)) {
-                run_failed = true;
-                return;
-              }
-            }  
-          }
-          if (fence) __sync_synchronize();
-        }
-      }
-    };
 
     if (clear_cache)
       std::cout << "rsum was: " << random_sum << std::endl;
 
-    runs_.resize(repeats);
-    for (unsigned int i = 0; i < repeats; ++i) {
+    runs_.resize(num_repeats_);
+    for (unsigned int i = 0; i < num_repeats_; ++i) {
       random_sum = 0;
       individual_ns_sum = 0;
 
-      // Reset atomic counter.
-      cntr.store(0);
-      const auto ms = util::timing([&] {
-        dtl::run_in_parallel(f, cpu_mask, num_threads_);
-      });
-      log_sum_search_bound_ /= static_cast<double>(lookups_.size());
-      l1_sum_search_bound_ /= static_cast<double>(lookups_.size());
-      l2_sum_search_bound_ /= static_cast<double>(lookups_.size());
+      uint64_t ms;
+      if(num_threads_ == 1) {
+         ms = util::timing([&] {
+            DoEqualityLookupsCoreLoop<Index, time_each, fence, clear_cache>(index, 0, lookups_.size(), run_failed);
+         });
+      } else {
+         // Reset atomic counter.
+         cntr.store(0);
+
+         ms = util::timing([&] {
+           while (true) {
+             const size_t begin = cntr.fetch_add(batch_size);
+             if (begin >= lookups_.size()) break;
+             unsigned int limit = std::min(begin + batch_size, lookups_.size());
+             DoEqualityLookupsCoreLoop<Index, time_each, fence, clear_cache>(index, begin, limit, run_failed);
+            }
+         });
+      }
 
       runs_[i] = ms;
       if (run_failed) {
-        runs_ = std::vector<uint64_t>(repeats, 0);
+        runs_ = std::vector<uint64_t>(num_repeats_, 0);
         return;
       }
     }
+  }
+
+  template<class Index, bool time_each, bool fence, bool clear_cache>
+  void DoEqualityLookupsCoreLoop(Index &index, unsigned int start, unsigned int limit, bool &run_failed) {
+    SearchBound bound = {};
+    size_t qualifying;
+    uint64_t result;
+    typename std::vector<Row<KeyType>>::iterator iter;
+
+    for (unsigned int idx = start; idx < limit; ++idx) {
+      // Compute the actual index for debugging.
+      const volatile uint64_t lookup_key = lookups_[idx].key;
+      const volatile uint64_t expected = lookups_[idx].result;
+
+      if constexpr (clear_cache) {
+        // Make sure that all cache lines from large buffer are loaded
+        for(uint64_t& iter : memory) {
+          random_sum += iter;
+        }
+        _mm_mfence();
+
+        const auto start = std::chrono::high_resolution_clock::now();
+        bound = index.EqualityLookup(lookup_key);
+        uint64_t actual = searcher.search(data_, lookup_key, &qualifying,
+                                          bound.start, bound.stop);
+        if (!CheckResults(actual, expected, lookup_key, bound)) {
+          run_failed = true;
+          return;
+        }
+        const auto end = std::chrono::high_resolution_clock::now();
+
+        const auto timing = std::chrono::duration_cast<std::chrono::nanoseconds>(end
+                - start).count();
+        individual_ns_sum += timing;
+
+        } else {
+          // not tracking errors, measure the lookup time.
+          bound = index.EqualityLookup(lookup_key);
+          iter = std::lower_bound(data_.begin() + bound.start,
+                                  data_.begin() + bound.stop,
+                                  lookup_key,
+                                  [](const Row<KeyType>& lhs,
+                                     const KeyType lookup_key) {
+                                       return lhs.key < lookup_key;
+                                  });
+          result = 0;
+          while (iter != data_.end() && iter->key == lookup_key) {
+            result += iter->data[0];
+            ++iter;
+          }
+          if (result != expected) {
+            run_failed = true;
+            return;
+          }
+        }
+
+        if constexpr (fence) __sync_synchronize();
+     }
+  }
+
+  template<class Index>
+  void DoLookupsWithErrorTracking(Index& index) {
+     assert(track_errors);
+     if(num_threads_ > 1 || perf || cold_cache || fence) {
+        util::fail("error tracking can not be used in combination with: num_threads_ > 1 || perf || cold_cache || fence");
+     }
+
+     SearchBound bound = {};
+     for (unsigned int idx = 0; idx <  lookups_.size(); ++idx) {
+       const volatile uint64_t lookup_key = lookups_[idx].key;
+
+       bound = index.EqualityLookup(lookup_key);
+       if (bound.start != bound.stop) {
+         log_sum_search_bound_ += log2((double) (bound.stop - bound.start));
+         l1_sum_search_bound_ += abs((double) (bound.stop - bound.start));
+         l2_sum_search_bound_ += pow((double) (bound.stop - bound.start), 2);
+       }
+    }
+
+    log_sum_search_bound_ /= static_cast<double>(lookups_.size());
+    l1_sum_search_bound_ /= static_cast<double>(lookups_.size());
+    l2_sum_search_bound_ /= static_cast<double>(lookups_.size());
   }
 
   template<class Index>
@@ -435,6 +461,7 @@ private:
   bool csv_;
   // Number of lookup threads.
   const size_t num_threads_;
+  std::vector<uint64_t> memory; // Some memory we can read to flush the cache
 
   SearchClass<KeyType> searcher;
 };
