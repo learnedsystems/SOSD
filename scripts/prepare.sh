@@ -19,7 +19,6 @@ echo "Generating queries..."
 generate_lookups normal_200M_uint32
 generate_lookups normal_200M_uint64
 
-echo "(stand by, this one takes a while...)"
 generate_lookups lognormal_200M_uint32
 generate_lookups lognormal_200M_uint64
 
@@ -30,12 +29,18 @@ generate_lookups uniform_sparse_200M_uint32
 generate_lookups uniform_sparse_200M_uint64
 
 generate_lookups osm_cellids_200M_uint64
+generate_lookups osm_cellids_400M_uint64
+generate_lookups osm_cellids_600M_uint64
+generate_lookups osm_cellids_800M_uint64
+
 generate_lookups wiki_ts_200M_uint64
 
 generate_lookups books_200M_uint32
 generate_lookups books_200M_uint64
+generate_lookups books_400M_uint64
+generate_lookups books_600M_uint64
+generate_lookups books_800M_uint64
 
 generate_lookups fb_200M_uint64
-generate_lookups fb_200M_uint32
 
 
