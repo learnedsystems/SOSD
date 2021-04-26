@@ -23,6 +23,11 @@ template<template<typename> typename Searcher>
 void benchmark_32_rmi(sosd::Benchmark<uint32_t, Searcher>& benchmark,
                       bool pareto, const std::string& filename) {
   run_rmi_binary_pareto(uint32, books_200M)
+
+  run_rmi_binary_pareto(uint32, normal_200M);
+  run_rmi_binary_pareto(uint32, lognormal_200M);
+  run_rmi_binary_pareto(uint32, uniform_dense_200M);
+  run_rmi_binary_pareto(uint32, uniform_sparse_200M);
 }
 
 template<template<typename> typename Searcher>
@@ -40,6 +45,11 @@ void benchmark_64_rmi(sosd::Benchmark<uint64_t, Searcher>& benchmark,
   run_rmi_binary_pareto(uint64, books_400M);
   run_rmi_binary_pareto(uint64, books_600M);
   run_rmi_binary_pareto(uint64, books_800M);
+
+  run_rmi_binary_pareto(uint64, normal_200M);
+  run_rmi_binary_pareto(uint64, lognormal_200M);
+  run_rmi_binary_pareto(uint64, uniform_dense_200M);
+  run_rmi_binary_pareto(uint64, uniform_sparse_200M);  
 }
 
 

@@ -34,7 +34,7 @@ function do_benchmark_csv() {
 	rm $RESULTS
     fi
     echo "Executing workload $1 and printing to CSV"
-    $BENCHMARK -r 1 ./data/$1 ./data/$1_equality_lookups_10M --pareto --csv
+    $BENCHMARK -r 5 ./data/$1 ./data/$1_equality_lookups_10M --pareto --csv
 }
 
 mkdir -p ./results
