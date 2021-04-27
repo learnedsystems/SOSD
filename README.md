@@ -22,7 +22,7 @@ On vanilla Ubuntu 20.04 LTS:
 ```
 sudo apt -y update
 sudo apt -y install zstd python3-pip m4 cmake clang libboost-all-dev
-pip3 install --user numpy
+pip3 install --user numpy scipy
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source $HOME/.cargo/env
 ```
