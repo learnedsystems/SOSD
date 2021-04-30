@@ -1,10 +1,11 @@
 #! /usr/bin/env bash
 
 echo "Executing benchmark and saving results..."
-
-while getopts "c" arg; do
+num_iterations=1;
+while getopts c:n: arg; do
     case $arg in
         c) do_csv=true;;
+        n) num_iterations=${OPTARG};;
     esac
 done
 
@@ -21,7 +22,7 @@ function do_benchmark() {
         echo "Already have results for $1"
     else
         echo "Executing workload $1"
-        $BENCHMARK -r 1 ./data/$1 ./data/$1_equality_lookups_10M --pareto | tee ./results/$1_results.txt
+        $BENCHMARK -r $2 ./data/$1 ./data/$1_equality_lookups_10M --pareto | tee ./results/$1_results.txt
     fi
 }
 
@@ -34,15 +35,15 @@ function do_benchmark_csv() {
 	rm $RESULTS
     fi
     echo "Executing workload $1 and printing to CSV"
-    $BENCHMARK -r 5 ./data/$1 ./data/$1_equality_lookups_10M --pareto --csv
+    $BENCHMARK -r $2 ./data/$1 ./data/$1_equality_lookups_10M --pareto --csv
 }
 
 mkdir -p ./results
 
 for dataset in $(cat scripts/datasets_under_test.txt); do
     if [ "$do_csv" = true ]; then
-        do_benchmark_csv "$dataset"
+        do_benchmark_csv "$dataset" $num_iterations
     else
-        do_benchmark "$dataset"
+        do_benchmark "$dataset" $num_iterations
     fi
 done

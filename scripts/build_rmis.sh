@@ -29,8 +29,8 @@ build_rmi_set lognormal_200M_uint64
 build_rmi_set uniform_dense_200M_uint32
 build_rmi_set uniform_dense_200M_uint64
 
-build_rmi_set uniform_sparse_200M_uint64
 build_rmi_set uniform_sparse_200M_uint32
+build_rmi_set uniform_sparse_200M_uint64
 
 build_rmi_set fb_200M_uint64
 build_rmi_set wiki_ts_200M_uint64
