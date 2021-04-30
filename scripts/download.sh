@@ -64,3 +64,9 @@ main
 
 echo "Downsampling..."
 python3 downsample.py
+echo "Generating synthetic data..."
+python3 gen_uniform.py --many --uint32
+python3 gen_uniform.py --many
+python3 gen_uniform.py --many --sparse --uint32
+python3 gen_uniform.py --many --sparse
+python3 gen_norm.py

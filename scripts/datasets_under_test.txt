@@ -10,3 +10,11 @@ books_600M_uint64
 books_800M_uint64
 books_200M_uint32
 
+normal_200M_uint32
+normal_200M_uint64
+lognormal_200M_uint32
+lognormal_200M_uint64
+uniform_dense_200M_uint32
+uniform_dense_200M_uint64
+uniform_sparse_200M_uint32
+uniform_sparse_200M_uint64
