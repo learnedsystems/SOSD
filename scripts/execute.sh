@@ -2,7 +2,7 @@
 
 echo "Executing benchmark and saving results..."
 num_iterations=1;
-while getopts c:n: arg; do
+while getopts n:c arg; do
     case $arg in
         c) do_csv=true;;
         n) num_iterations=${OPTARG};;
