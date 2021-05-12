@@ -7,7 +7,7 @@ if [ -f rmi.tar.zst ]; then
     echo "Tarball already exists, using it."
 else
     echo "Downloading tarball..."
-    wget -O rmi.tar.zst https://www.dropbox.com/s/uuyknn0qeag93sj/rmi.tar.zst?dl=1
+    wget -O rmi.tar.zst https://s3.wasabisys.com/sosd/rmi.tar.zst
 fi
 
 echo "Decompressing..."
