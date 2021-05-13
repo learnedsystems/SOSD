@@ -154,6 +154,24 @@ class RS : public Competitor {
       return configs[10 - size_scale];
     }
 
+    if (dataset == "osm_cellids_400M_uint64") {
+      Configs configs = {{20, 190}, {20, 190}, {20, 190}, {20, 190}, {22, 80},
+                         {24, 20},  {26, 20},  {26, 10},  {28, 6},   {28, 2}};
+      return configs[10 - size_scale];
+    }
+
+    if (dataset == "osm_cellids_600M_uint64") {
+      Configs configs = {{20, 190}, {20, 190}, {20, 190}, {22, 180}, {22, 100},
+                         {24, 20},  {26, 20},  {28, 7},   {28, 5},   {28, 2}};
+      return configs[10 - size_scale];
+    }
+
+    if (dataset == "osm_cellids_800M_uint64") {
+      Configs configs = {{22, 190}, {22, 190}, {22, 190}, {22, 190}, {24, 190},
+                         {26, 30},  {26, 20},  {28, 7},   {28, 5},   {28, 1}};
+      return configs[10 - size_scale];
+    }
+
     // Wiki
     if (dataset == "wiki_ts_200M_uint64") {
       Configs configs = {{14, 100}, {14, 100}, {16, 60}, {18, 20}, {20, 20},
