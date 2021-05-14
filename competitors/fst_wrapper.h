@@ -1,17 +1,18 @@
 #pragma once
 
-#include "base.h"
-#include "./FST/include/fst.hpp"
 #include <type_traits>
 
-template<class KeyType, int size_scale>
+#include "./FST/include/fst.hpp"
+#include "base.h"
+
+template <class KeyType, int size_scale>
 class FST : public Competitor {
  public:
   // assume that keys are unique and sorted in ascending order
-  uint64_t Build(const std::vector<KeyValue<KeyType>> &data) {
+  uint64_t Build(const std::vector<KeyValue<KeyType>>& data) {
     data_size_ = data.size();
     min_key_ = data[0].key;
-    
+
     // transform integer keys to strings
     std::vector<std::string> keys;
     keys.reserve(data.size());
@@ -19,20 +20,17 @@ class FST : public Competitor {
     // we'll construct a `values` array, but it seems to be ignored by FST
     // (we always just get the index).
     std::vector<uint64_t> values;
-    for (const KeyValue<KeyType> &kv: data) {
-      if (size_scale > 1 && kv.value % size_scale != 0)
-        continue;
+    for (const KeyValue<KeyType>& kv : data) {
+      if (size_scale > 1 && kv.value % size_scale != 0) continue;
 
       if (std::is_same<KeyType, std::uint64_t>::value) {
         uint64_t endian_swapped_word = __builtin_bswap64(kv.key);
-        keys.emplace_back(
-            std::string(reinterpret_cast<const char *>(&endian_swapped_word),
-                        8));
+        keys.emplace_back(std::string(
+            reinterpret_cast<const char*>(&endian_swapped_word), 8));
       } else {
         uint32_t endian_swapped_word = __builtin_bswap32(kv.key);
-        keys.emplace_back(
-            std::string(reinterpret_cast<const char *>(&endian_swapped_word),
-                        4));
+        keys.emplace_back(std::string(
+            reinterpret_cast<const char*>(&endian_swapped_word), 4));
       }
 
       max_key_ = kv.key;
@@ -41,36 +39,32 @@ class FST : public Competitor {
     }
 
     // build fast succinct trie
-    return util::timing([&] {
-      fst_ = std::make_unique<fst::FST>(keys, values);
-    });
+    return util::timing(
+        [&] { fst_ = std::make_unique<fst::FST>(keys, values); });
   }
 
   SearchBound EqualityLookup(const KeyType lookup_key) const {
     std::string key;
     if (std::is_same<KeyType, std::uint64_t>::value) {
-        uint64_t endian_swapped_word = __builtin_bswap64(lookup_key);
-        key = std::string(reinterpret_cast<const char *>(&endian_swapped_word),
-                          8);
-      } else {
-        uint32_t endian_swapped_word = __builtin_bswap32(lookup_key);
-        key = std::string(reinterpret_cast<const char *>(&endian_swapped_word),
-                          4);
-      }
+      uint64_t endian_swapped_word = __builtin_bswap64(lookup_key);
+      key = std::string(reinterpret_cast<const char*>(&endian_swapped_word), 8);
+    } else {
+      uint32_t endian_swapped_word = __builtin_bswap32(lookup_key);
+      key = std::string(reinterpret_cast<const char*>(&endian_swapped_word), 4);
+    }
 
     uint64_t guess;
     if (lookup_key >= max_key_) {
       // looking up a value greater than the largest value causes a segfault...
-      return (SearchBound) { max_val_, data_size_ };
+      return (SearchBound){max_val_, data_size_};
       std::cout << max_val_ << "!!!" << std::endl;
     } else {
       auto iter = fst_->moveToKeyGreaterThan(key, true);
 
       // sometimes we get back a bad iterator even though
       // we shouldn't...
-      if (! iter.isValid())
-        return (SearchBound) { 0, data_size_ };
-      
+      if (!iter.isValid()) return (SearchBound){0, data_size_};
+
       // multiply by size_scale here because getValue() returns an index
       guess = iter.getValue() * size_scale;
     }
@@ -82,24 +76,22 @@ class FST : public Competitor {
     const uint64_t start = (guess < error ? 0 : guess - error);
     if (start > data_size_) {
       // happens on fb_200M_uint64 with 256 size_scale
-      return (SearchBound) { 0, data_size_ };
+      return (SearchBound){0, data_size_};
     }
-    const uint64_t stop = (guess + error >= data_size_ ?
-                           data_size_ : guess + error + 1);
-    
-    return (SearchBound) { start, stop };
+    const uint64_t stop =
+        (guess + error >= data_size_ ? data_size_ : guess + error + 1);
+
+    return (SearchBound){start, stop};
   }
 
-  std::string name() const {
-    return "FST";
-  }
+  std::string name() const { return "FST"; }
 
   std::size_t size() const {
     // return used memory in bytes
     return fst_->getMemoryUsage();
   }
 
-  bool applicable(bool unique, const std::string &data_filename) {
+  bool applicable(bool unique, const std::string& data_filename) {
     // FST only supports unique keys.
     return unique;
   }

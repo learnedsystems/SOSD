@@ -8,8 +8,5 @@ class Competitor {
     return true;
   }
 
-  int variant() const {
-    return 0;
-  }
-
+  int variant() const { return 0; }
 };

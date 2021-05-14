@@ -1,12 +1,12 @@
 #pragma once
 
-#include "base.h"
 #include <tsl/robin_map.h>
 
+#include "base.h"
 
-template<class KeyType>
+template <class KeyType>
 class RobinHash : public Competitor {
-public:
+ public:
   uint64_t Build(const std::vector<KeyValue<KeyType>>& data) {
     return util::timing([&] {
       // target a load factor of 0.75
@@ -21,18 +21,16 @@ public:
     auto search = map_.find(lookup_key);
     if (search == map_.end())
       util::fail("Could not find lookup key in hashmap!");
-    
-    return (SearchBound){ search.value(), search.value() + 1 };
+
+    return (SearchBound){search.value(), search.value() + 1};
   }
 
-  std::string name() const {
-    return "RobinHash";
-  }
+  std::string name() const { return "RobinHash"; }
 
   std::size_t size() const {
     return map_.bucket_count() * (sizeof(KeyType) + sizeof(uint64_t));
   }
 
-private:
+ private:
   tsl::robin_map<KeyType, uint64_t> map_;
 };

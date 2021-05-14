@@ -1,26 +1,26 @@
 #pragma once
 
-#include "base.h"
 #include "../util.h"
+#include "base.h"
 
-template<class KeyType, uint32_t num_radix_bits>
+template <class KeyType, uint32_t num_radix_bits>
 class RadixBinarySearch : public Competitor {
  public:
   uint64_t Build(const std::vector<KeyValue<KeyType>>& data) {
     return util::timing([&] {
       radix_hint_.resize((1ull << num_radix_bits) + 1);
-      
+
       n_ = data.size();
-      
+
       min_ = data.front().key;
       max_ = data.back().key;
       shift_bits_ = shift_bits(max_ - min_);
-      
+
       radix_hint_[0] = 0;
       uint64_t prev_prefix = 0;
       for (uint64_t i = 0; i < n_; ++i) {
         uint64_t curr_prefix = (data[i].key - min_) >> shift_bits_;
-        if (curr_prefix!=prev_prefix) {
+        if (curr_prefix != prev_prefix) {
           for (uint64_t j = prev_prefix + 1; j <= curr_prefix; ++j)
             radix_hint_[j] = i;
           prev_prefix = curr_prefix;
@@ -30,12 +30,13 @@ class RadixBinarySearch : public Competitor {
         radix_hint_[prev_prefix + 1] = n_;
     });
   }
-      
 
   SearchBound EqualityLookup(const KeyType lookup_key) const {
     // Compute index.
-    if (lookup_key < min_) return (SearchBound) { 0, 1 };
-    else if (lookup_key > max_) return (SearchBound) { n_ - 1, n_ };
+    if (lookup_key < min_)
+      return (SearchBound){0, 1};
+    else if (lookup_key > max_)
+      return (SearchBound){n_ - 1, n_};
 
     uint64_t p = (lookup_key - min_) >> shift_bits_;
     if (p > radix_hint_.size() - 2) p = radix_hint_.size() - 2;
@@ -44,22 +45,17 @@ class RadixBinarySearch : public Competitor {
 
     if (begin != 0) begin--;
     if (end != n_) end++;
-    
-    return (SearchBound) { begin, end };
+
+    return (SearchBound){begin, end};
   }
 
-  std::string name() const {
-    return std::string("RBS");
-  }
+  std::string name() const { return std::string("RBS"); }
 
-  std::size_t size() const {
-    return sizeof(uint32_t) * radix_hint_.size();
-  }
+  std::size_t size() const { return sizeof(uint32_t) * radix_hint_.size(); }
 
   int variant() const { return num_radix_bits; }
-  
-  bool applicable(bool _unique,
-                  const std::string& filename) const {
+
+  bool applicable(bool _unique, const std::string& filename) const {
     return true;
   }
 
