@@ -1,11 +1,11 @@
-#include "common.h"
 #include "benchmark.h"
 #include "benchmarks/benchmark_btree.h"
+#include "common.h"
 #include "competitors/interpolation_btree.h"
 
-
-template<template<typename> typename Searcher>
-void benchmark_32_ibtree(sosd::Benchmark<uint32_t, Searcher>& benchmark, bool pareto) {
+template <template <typename> typename Searcher>
+void benchmark_32_ibtree(sosd::Benchmark<uint32_t, Searcher>& benchmark,
+                         bool pareto) {
   benchmark.template Run<InterpolationBTree<uint32_t, 1>>();
   if (pareto) {
     benchmark.template Run<InterpolationBTree<uint32_t, 32>>();
@@ -22,8 +22,9 @@ void benchmark_32_ibtree(sosd::Benchmark<uint32_t, Searcher>& benchmark, bool pa
   }
 }
 
-template<template<typename> typename Searcher>
-void benchmark_64_ibtree(sosd::Benchmark<uint64_t, Searcher>& benchmark, bool pareto) {
+template <template <typename> typename Searcher>
+void benchmark_64_ibtree(sosd::Benchmark<uint64_t, Searcher>& benchmark,
+                         bool pareto) {
   benchmark.template Run<InterpolationBTree<uint64_t, 1>>();
   if (pareto) {
     benchmark.template Run<InterpolationBTree<uint64_t, 32>>();

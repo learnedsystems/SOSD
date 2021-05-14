@@ -1,11 +1,12 @@
-#include "common.h"
-#include "benchmark.h"
 #include "benchmarks/benchmark_btree.h"
+
+#include "benchmark.h"
+#include "common.h"
 #include "competitors/stx_btree.h"
 
-
-template<template<typename> typename Searcher>
-void benchmark_32_btree(sosd::Benchmark<uint32_t, Searcher>& benchmark, bool pareto) {
+template <template <typename> typename Searcher>
+void benchmark_32_btree(sosd::Benchmark<uint32_t, Searcher>& benchmark,
+                        bool pareto) {
   benchmark.template Run<STXBTree<uint32_t, 32>>();
   if (pareto) {
     benchmark.template Run<STXBTree<uint32_t, 1>>();
@@ -24,9 +25,9 @@ void benchmark_32_btree(sosd::Benchmark<uint32_t, Searcher>& benchmark, bool par
   }
 }
 
-
-template<template<typename> typename Searcher>
-void benchmark_64_btree(sosd::Benchmark<uint64_t, Searcher>& benchmark, bool pareto) {
+template <template <typename> typename Searcher>
+void benchmark_64_btree(sosd::Benchmark<uint64_t, Searcher>& benchmark,
+                        bool pareto) {
   // tuned for Pareto efficiency
   benchmark.template Run<STXBTree<uint64_t, 32>>();
   if (pareto) {

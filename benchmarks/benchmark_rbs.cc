@@ -1,9 +1,10 @@
+#include "benchmarks/benchmark_rbs.h"
+
 #include "benchmark.h"
 #include "benchmarks/common.h"
-#include "benchmarks/benchmark_rbs.h"
 #include "competitors/radix_binary_search.h"
 
-template<template<typename> typename Searcher>
+template <template <typename> typename Searcher>
 void benchmark_32_rbs(sosd::Benchmark<uint32_t, Searcher>& benchmark,
                       bool pareto) {
   benchmark.template Run<RadixBinarySearch<uint32_t, 28>>();
@@ -23,7 +24,7 @@ void benchmark_32_rbs(sosd::Benchmark<uint32_t, Searcher>& benchmark,
   }
 }
 
-template<template<typename> typename Searcher>
+template <template <typename> typename Searcher>
 void benchmark_64_rbs(sosd::Benchmark<uint64_t, Searcher>& benchmark,
                       bool pareto) {
   benchmark.template Run<RadixBinarySearch<uint64_t, 28>>();

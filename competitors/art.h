@@ -1,16 +1,17 @@
 #pragma once
 
-#include "base.h"
-#include "../util.h"
-
+#include <assert.h>
+#include <emmintrin.h>  // x86 SSE intrinsics
+#include <stdint.h>     // integer types
+#include <stdio.h>
 #include <stdlib.h>    // malloc, free
 #include <string.h>    // memset, memcpy
-#include <stdint.h>    // integer types
-#include <emmintrin.h> // x86 SSE intrinsics
-#include <stdio.h>
-#include <assert.h>
 #include <sys/time.h>  // gettime
-#include <algorithm>   // std::random_shuffle
+
+#include <algorithm>  // std::random_shuffle
+
+#include "../util.h"
+#include "base.h"
 
 class ART : public Competitor {
  public:
@@ -39,24 +40,20 @@ class ART : public Competitor {
     uint8_t key[8];
     swapBytes(lookup_key, key);
     Node* leaf = lookup(tree_, key, 8, 0, 8);
-    if (!isLeaf(leaf))
-      util::fail("ART: search ended in inner node");
+    if (!isLeaf(leaf)) util::fail("ART: search ended in inner node");
     return getLeafValue(leaf);
   }
 
-  std::string name() const {
-    return "ART";
-  }
+  std::string name() const { return "ART"; }
 
-  std::size_t size() const {
-    return sizeof(*this) + allocated_byte_count;
-  }
+  std::size_t size() const { return sizeof(*this) + allocated_byte_count; }
 
-  bool applicable(bool unique,
-                  const std::string& _data_filename) const { return unique; }
+  bool applicable(bool unique, const std::string& _data_filename) const {
+    return unique;
+  }
 
  private:
-  static uint64_t allocated_byte_count; // track bytes allocated
+  static uint64_t allocated_byte_count;  // track bytes allocated
 
   /*
   Adaptive Radix Tree
@@ -70,12 +67,12 @@ class ART : public Competitor {
   static const int8_t NodeType48 = 2;
   static const int8_t NodeType256 = 3;
 
-// The maximum prefix length for compressed paths stored in the
-// header, if the path is longer it is loaded from the database on
-// demand
+  // The maximum prefix length for compressed paths stored in the
+  // header, if the path is longer it is loaded from the database on
+  // demand
   static const unsigned maxPrefixLength = 9;
 
-// Shared header of all inner nodes
+  // Shared header of all inner nodes
   struct Node {
     // length of the compressed path (prefix)
     uint32_t prefixLength;
@@ -110,7 +107,7 @@ class ART : public Competitor {
     }
   };
 
-// Node with up to 4 children
+  // Node with up to 4 children
   struct Node4 : Node {
     uint8_t key[4];
     Node* child[4];
@@ -122,7 +119,7 @@ class ART : public Competitor {
     }
   };
 
-// Node with up to 16 children
+  // Node with up to 16 children
   struct Node16 : Node {
     uint8_t key[16];
     Node* child[16];
@@ -136,7 +133,7 @@ class ART : public Competitor {
 
   static const uint8_t emptyMarker = 48;
 
-// Node with up to 48 children
+  // Node with up to 48 children
   struct Node48 : Node {
     uint8_t childIndex[256];
     Node* child[48];
@@ -148,7 +145,7 @@ class ART : public Competitor {
     }
   };
 
-// Node with up to 256 children
+  // Node with up to 256 children
   struct Node256 : Node {
     Node* child[256];
 
@@ -174,7 +171,8 @@ class ART : public Competitor {
   }
 
   uint8_t flipSign(uint8_t keyByte) {
-    // Flip the sign bit, enables signed SSE comparison of unsigned values, used by Node16
+    // Flip the sign bit, enables signed SSE comparison of unsigned values, used
+    // by Node16
     return keyByte ^ 128;
   }
 
@@ -189,7 +187,7 @@ class ART : public Competitor {
     swapBytes(org_key, key);
   }
 
-// This address is used to communicate that search failed
+  // This address is used to communicate that search failed
   Node* nullNode = NULL;
 
   static inline unsigned ctz(uint16_t x) {
@@ -198,11 +196,20 @@ class ART : public Competitor {
     return __builtin_ctz(x);
 #else
     // Adapted from Hacker's Delight
-   unsigned n=1;
-   if ((x&0xFF)==0) {n+=8; x=x>>8;}
-   if ((x&0x0F)==0) {n+=4; x=x>>4;}
-   if ((x&0x03)==0) {n+=2; x=x>>2;}
-   return n-(x&1);
+    unsigned n = 1;
+    if ((x & 0xFF) == 0) {
+      n += 8;
+      x = x >> 8;
+    }
+    if ((x & 0x0F) == 0) {
+      n += 4;
+      x = x >> 4;
+    }
+    if ((x & 0x03) == 0) {
+      n += 2;
+      x = x >> 2;
+    }
+    return n - (x & 1);
 #endif
   }
 
@@ -212,14 +219,14 @@ class ART : public Competitor {
       case NodeType4: {
         Node4* node = static_cast<Node4*>(n);
         for (unsigned i = 0; i < node->count; i++)
-          if (node->key[i]==keyByte)
-            return &node->child[i];
+          if (node->key[i] == keyByte) return &node->child[i];
         return &nullNode;
       }
       case NodeType16: {
         Node16* node = static_cast<Node16*>(n);
-        __m128i cmp = _mm_cmpeq_epi8(_mm_set1_epi8(flipSign(keyByte)),
-                                     _mm_loadu_si128(reinterpret_cast<__m128i*>(node->key)));
+        __m128i cmp = _mm_cmpeq_epi8(
+            _mm_set1_epi8(flipSign(keyByte)),
+            _mm_loadu_si128(reinterpret_cast<__m128i*>(node->key)));
         unsigned bitfield = _mm_movemask_epi8(cmp) & ((1 << node->count) - 1);
         if (bitfield)
           return &node->child[ctz(bitfield)];
@@ -228,7 +235,7 @@ class ART : public Competitor {
       }
       case NodeType48: {
         Node48* node = static_cast<Node48*>(n);
-        if (node->childIndex[keyByte]!=emptyMarker)
+        if (node->childIndex[keyByte] != emptyMarker)
           return &node->child[node->childIndex[keyByte]];
         else
           return &nullNode;
@@ -238,16 +245,14 @@ class ART : public Competitor {
         return &(node->child[keyByte]);
       }
     }
-    throw; // Unreachable
+    throw;  // Unreachable
   }
 
   Node* minimum(Node* node) {
     // Find the leaf with smallest key
-    if (!node)
-      return NULL;
+    if (!node) return NULL;
 
-    if (isLeaf(node))
-      return node;
+    if (isLeaf(node)) return node;
 
     switch (node->type) {
       case NodeType4: {
@@ -261,28 +266,24 @@ class ART : public Competitor {
       case NodeType48: {
         Node48* n = static_cast<Node48*>(node);
         unsigned pos = 0;
-        while (n->childIndex[pos]==emptyMarker)
-          pos++;
+        while (n->childIndex[pos] == emptyMarker) pos++;
         return minimum(n->child[n->childIndex[pos]]);
       }
       case NodeType256: {
         Node256* n = static_cast<Node256*>(node);
         unsigned pos = 0;
-        while (!n->child[pos])
-          pos++;
+        while (!n->child[pos]) pos++;
         return minimum(n->child[pos]);
       }
     }
-    throw; // Unreachable
+    throw;  // Unreachable
   }
 
   Node* maximum(Node* node) {
     // Find the leaf with largest key
-    if (!node)
-      return NULL;
+    if (!node) return NULL;
 
-    if (isLeaf(node))
-      return node;
+    if (isLeaf(node)) return node;
 
     switch (node->type) {
       case NodeType4: {
@@ -296,82 +297,68 @@ class ART : public Competitor {
       case NodeType48: {
         Node48* n = static_cast<Node48*>(node);
         unsigned pos = 255;
-        while (n->childIndex[pos]==emptyMarker)
-          pos--;
+        while (n->childIndex[pos] == emptyMarker) pos--;
         return maximum(n->child[n->childIndex[pos]]);
       }
       case NodeType256: {
         Node256* n = static_cast<Node256*>(node);
         unsigned pos = 255;
-        while (!n->child[pos])
-          pos--;
+        while (!n->child[pos]) pos--;
         return maximum(n->child[pos]);
       }
     }
-    throw; // Unreachable
+    throw;  // Unreachable
   }
 
-  bool leafMatches(Node* leaf,
-                   uint8_t key[],
-                   unsigned keyLength,
-                   unsigned depth,
-                   unsigned maxKeyLength) {
+  bool leafMatches(Node* leaf, uint8_t key[], unsigned keyLength,
+                   unsigned depth, unsigned maxKeyLength) {
     // Check if the key of the leaf is equal to the searched key
-    if (depth!=keyLength) {
+    if (depth != keyLength) {
       uint8_t leafKey[maxKeyLength];
       loadKey(getLeafValue(leaf), leafKey);
       for (unsigned i = depth; i < keyLength; i++)
-        if (leafKey[i]!=key[i])
-          return false;
+        if (leafKey[i] != key[i]) return false;
     }
     return true;
   }
 
-  unsigned prefixMismatch(Node* node,
-                          uint8_t key[],
-                          unsigned depth,
+  unsigned prefixMismatch(Node* node, uint8_t key[], unsigned depth,
                           unsigned maxKeyLength) {
-    // Compare the key with the prefix of the node, return the number matching bytes
+    // Compare the key with the prefix of the node, return the number matching
+    // bytes
     unsigned pos;
     if (node->prefixLength > maxPrefixLength) {
       for (pos = 0; pos < maxPrefixLength; pos++)
-        if (key[depth + pos]!=node->prefix[pos])
-          return pos;
+        if (key[depth + pos] != node->prefix[pos]) return pos;
       uint8_t minKey[maxKeyLength];
       loadKey(getLeafValue(minimum(node)), minKey);
       for (; pos < node->prefixLength; pos++)
-        if (key[depth + pos]!=minKey[depth + pos])
-          return pos;
+        if (key[depth + pos] != minKey[depth + pos]) return pos;
     } else {
       for (pos = 0; pos < node->prefixLength; pos++)
-        if (key[depth + pos]!=node->prefix[pos])
-          return pos;
+        if (key[depth + pos] != node->prefix[pos]) return pos;
     }
     return pos;
   }
 
-  Node* lookup(Node* node,
-               uint8_t key[],
-               unsigned keyLength,
-               unsigned depth,
+  Node* lookup(Node* node, uint8_t key[], unsigned keyLength, unsigned depth,
                unsigned maxKeyLength) {
     // Find the node with a matching key, optimistic version
 
     bool skippedPrefix =
-        false; // Did we optimistically skip some prefix without checking it?
+        false;  // Did we optimistically skip some prefix without checking it?
 
-    while (node!=NULL) {
+    while (node != NULL) {
       if (isLeaf(node)) {
-        if (!skippedPrefix && depth==keyLength) // No check required
+        if (!skippedPrefix && depth == keyLength)  // No check required
           return node;
 
-        if (depth!=keyLength) {
+        if (depth != keyLength) {
           // Check leaf
           uint8_t leafKey[maxKeyLength];
           loadKey(getLeafValue(node), leafKey);
           for (unsigned i = (skippedPrefix ? 0 : depth); i < keyLength; i++)
-            if (leafKey[i]!=key[i])
-              return NULL;
+            if (leafKey[i] != key[i]) return NULL;
         }
         return node;
       }
@@ -379,8 +366,7 @@ class ART : public Competitor {
       if (node->prefixLength) {
         if (node->prefixLength < maxPrefixLength) {
           for (unsigned pos = 0; pos < node->prefixLength; pos++)
-            if (key[depth + pos]!=node->prefix[pos])
-              return NULL;
+            if (key[depth + pos] != node->prefix[pos]) return NULL;
         } else
           skippedPrefix = true;
         depth += node->prefixLength;
@@ -393,21 +379,17 @@ class ART : public Competitor {
     return NULL;
   }
 
-  Node* lookupPessimistic(Node* node,
-                          uint8_t key[],
-                          unsigned keyLength,
-                          unsigned depth,
-                          unsigned maxKeyLength) {
+  Node* lookupPessimistic(Node* node, uint8_t key[], unsigned keyLength,
+                          unsigned depth, unsigned maxKeyLength) {
     // Find the node with a matching key, alternative pessimistic version
 
-    while (node!=NULL) {
+    while (node != NULL) {
       if (isLeaf(node)) {
-        if (leafMatches(node, key, keyLength, depth, maxKeyLength))
-          return node;
+        if (leafMatches(node, key, keyLength, depth, maxKeyLength)) return node;
         return NULL;
       }
 
-      if (prefixMismatch(node, key, depth, maxKeyLength)!=node->prefixLength)
+      if (prefixMismatch(node, key, depth, maxKeyLength) != node->prefixLength)
         return NULL;
       else
         depth += node->prefixLength;
@@ -419,14 +401,14 @@ class ART : public Competitor {
     return NULL;
   }
 
-// Forward references
-//  void insertNode4(Node4* node, Node** nodeRef, uint8_t keyByte, Node* child);
-//  void insertNode16(Node16* node, Node** nodeRef, uint8_t keyByte, Node* child);
-//  void insertNode48(Node48* node, Node** nodeRef, uint8_t keyByte, Node* child);
-//  void insertNode256(Node256* node,
-//                     Node** nodeRef,
-//                     uint8_t keyByte,
-//                     Node* child);
+  // Forward references
+  //  void insertNode4(Node4* node, Node** nodeRef, uint8_t keyByte, Node*
+  //  child); void insertNode16(Node16* node, Node** nodeRef, uint8_t keyByte,
+  //  Node* child); void insertNode48(Node48* node, Node** nodeRef, uint8_t
+  //  keyByte, Node* child); void insertNode256(Node256* node,
+  //                     Node** nodeRef,
+  //                     uint8_t keyByte,
+  //                     Node* child);
 
   unsigned min(unsigned a, unsigned b) {
     // Helper function
@@ -434,20 +416,17 @@ class ART : public Competitor {
   }
 
   void copyPrefix(Node* src, Node* dst) {
-    // Helper function that copies the prefix from the source to the destination node
+    // Helper function that copies the prefix from the source to the destination
+    // node
     dst->prefixLength = src->prefixLength;
     memcpy(dst->prefix, src->prefix, min(src->prefixLength, maxPrefixLength));
   }
 
-  void insert(Node* node,
-              Node** nodeRef,
-              uint8_t key[],
-              unsigned depth,
-              uintptr_t value,
-              unsigned maxKeyLength) {
+  void insert(Node* node, Node** nodeRef, uint8_t key[], unsigned depth,
+              uintptr_t value, unsigned maxKeyLength) {
     // Insert the leaf value into the tree
 
-    if (node==NULL) {
+    if (node == NULL) {
       *nodeRef = makeLeaf(value);
       return;
     }
@@ -457,20 +436,18 @@ class ART : public Competitor {
       uint8_t existingKey[maxKeyLength];
       loadKey(getLeafValue(node), existingKey);
       unsigned newPrefixLength = 0;
-      while (existingKey[depth + newPrefixLength]==key[depth + newPrefixLength])
+      while (existingKey[depth + newPrefixLength] ==
+             key[depth + newPrefixLength])
         newPrefixLength++;
 
       Node4* newNode = new Node4();
       newNode->prefixLength = newPrefixLength;
-      memcpy(newNode->prefix,
-             key + depth,
+      memcpy(newNode->prefix, key + depth,
              min(newPrefixLength, maxPrefixLength));
       *nodeRef = newNode;
 
       insertNode4(newNode, nodeRef, existingKey[depth + newPrefixLength], node);
-      insertNode4(newNode,
-                  nodeRef,
-                  key[depth + newPrefixLength],
+      insertNode4(newNode, nodeRef, key[depth + newPrefixLength],
                   makeLeaf(value));
       return;
     }
@@ -478,33 +455,28 @@ class ART : public Competitor {
     // Handle prefix of inner node
     if (node->prefixLength) {
       unsigned mismatchPos = prefixMismatch(node, key, depth, maxKeyLength);
-      if (mismatchPos!=node->prefixLength) {
+      if (mismatchPos != node->prefixLength) {
         // Prefix differs, create new node
         Node4* newNode = new Node4();
         *nodeRef = newNode;
         newNode->prefixLength = mismatchPos;
-        memcpy(newNode->prefix,
-               node->prefix,
+        memcpy(newNode->prefix, node->prefix,
                min(mismatchPos, maxPrefixLength));
         // Break up prefix
         if (node->prefixLength < maxPrefixLength) {
           insertNode4(newNode, nodeRef, node->prefix[mismatchPos], node);
           node->prefixLength -= (mismatchPos + 1);
-          memmove(node->prefix,
-                  node->prefix + mismatchPos + 1,
+          memmove(node->prefix, node->prefix + mismatchPos + 1,
                   min(node->prefixLength, maxPrefixLength));
         } else {
           node->prefixLength -= (mismatchPos + 1);
           uint8_t minKey[maxKeyLength];
           loadKey(getLeafValue(minimum(node)), minKey);
           insertNode4(newNode, nodeRef, minKey[depth + mismatchPos], node);
-          memmove(node->prefix,
-                  minKey + depth + mismatchPos + 1,
+          memmove(node->prefix, minKey + depth + mismatchPos + 1,
                   min(node->prefixLength, maxPrefixLength));
         }
-        insertNode4(newNode,
-                    nodeRef,
-                    key[depth + mismatchPos],
+        insertNode4(newNode, nodeRef, key[depth + mismatchPos],
                     makeLeaf(value));
         return;
       }
@@ -522,27 +494,16 @@ class ART : public Competitor {
     Node* newNode = makeLeaf(value);
     switch (node->type) {
       case NodeType4:
-        insertNode4(static_cast<Node4*>(node),
-                    nodeRef,
-                    key[depth],
-                    newNode);
+        insertNode4(static_cast<Node4*>(node), nodeRef, key[depth], newNode);
         break;
       case NodeType16:
-        insertNode16(static_cast<Node16*>(node),
-                     nodeRef,
-                     key[depth],
-                     newNode);
+        insertNode16(static_cast<Node16*>(node), nodeRef, key[depth], newNode);
         break;
       case NodeType48:
-        insertNode48(static_cast<Node48*>(node),
-                     nodeRef,
-                     key[depth],
-                     newNode);
+        insertNode48(static_cast<Node48*>(node), nodeRef, key[depth], newNode);
         break;
       case NodeType256:
-        insertNode256(static_cast<Node256*>(node),
-                      nodeRef,
-                      key[depth],
+        insertNode256(static_cast<Node256*>(node), nodeRef, key[depth],
                       newNode);
         break;
     }
@@ -553,11 +514,11 @@ class ART : public Competitor {
     if (node->count < 4) {
       // Insert element
       unsigned pos;
-      for (pos = 0; (pos < node->count) && (node->key[pos] < keyByte); pos++);
+      for (pos = 0; (pos < node->count) && (node->key[pos] < keyByte); pos++)
+        ;
       memmove(node->key + pos + 1, node->key + pos, node->count - pos);
-      memmove(node->child + pos + 1,
-              node->child + pos,
-              (node->count - pos)*sizeof(uintptr_t));
+      memmove(node->child + pos + 1, node->child + pos,
+              (node->count - pos) * sizeof(uintptr_t));
       node->key[pos] = keyByte;
       node->child[pos] = child;
       node->count++;
@@ -567,31 +528,28 @@ class ART : public Competitor {
       *nodeRef = newNode;
       newNode->count = 4;
       copyPrefix(node, newNode);
-      for (unsigned i = 0; i < 4; i++)
-        newNode->key[i] = flipSign(node->key[i]);
-      memcpy(newNode->child, node->child, node->count*sizeof(uintptr_t));
+      for (unsigned i = 0; i < 4; i++) newNode->key[i] = flipSign(node->key[i]);
+      memcpy(newNode->child, node->child, node->count * sizeof(uintptr_t));
       delete node;
       return insertNode16(newNode, nodeRef, keyByte, child);
     }
   }
 
-  void insertNode16(Node16* node,
-                    Node** nodeRef,
-                    uint8_t keyByte,
+  void insertNode16(Node16* node, Node** nodeRef, uint8_t keyByte,
                     Node* child) {
     // Insert leaf into inner node
     if (node->count < 16) {
       // Insert element
       uint8_t keyByteFlipped = flipSign(keyByte);
-      __m128i cmp = _mm_cmplt_epi8(_mm_set1_epi8(keyByteFlipped),
-                                   _mm_loadu_si128(reinterpret_cast<__m128i*>(node->key)));
-      uint16_t
-          bitfield = _mm_movemask_epi8(cmp) & (0xFFFF >> (16 - node->count));
+      __m128i cmp = _mm_cmplt_epi8(
+          _mm_set1_epi8(keyByteFlipped),
+          _mm_loadu_si128(reinterpret_cast<__m128i*>(node->key)));
+      uint16_t bitfield =
+          _mm_movemask_epi8(cmp) & (0xFFFF >> (16 - node->count));
       unsigned pos = bitfield ? ctz(bitfield) : node->count;
       memmove(node->key + pos + 1, node->key + pos, node->count - pos);
-      memmove(node->child + pos + 1,
-              node->child + pos,
-              (node->count - pos)*sizeof(uintptr_t));
+      memmove(node->child + pos + 1, node->child + pos,
+              (node->count - pos) * sizeof(uintptr_t));
       node->key[pos] = keyByteFlipped;
       node->child[pos] = child;
       node->count++;
@@ -599,7 +557,7 @@ class ART : public Competitor {
       // Grow to Node48
       Node48* newNode = new Node48();
       *nodeRef = newNode;
-      memcpy(newNode->child, node->child, node->count*sizeof(uintptr_t));
+      memcpy(newNode->child, node->child, node->count * sizeof(uintptr_t));
       for (unsigned i = 0; i < node->count; i++)
         newNode->childIndex[flipSign(node->key[i])] = i;
       copyPrefix(node, newNode);
@@ -609,16 +567,15 @@ class ART : public Competitor {
     }
   }
 
-  void insertNode48(Node48* node,
-                    Node** nodeRef,
-                    uint8_t keyByte,
+  void insertNode48(Node48* node, Node** nodeRef, uint8_t keyByte,
                     Node* child) {
     // Insert leaf into inner node
     if (node->count < 48) {
       // Insert element
       unsigned pos = node->count;
       if (node->child[pos])
-        for (pos = 0; node->child[pos]!=NULL; pos++);
+        for (pos = 0; node->child[pos] != NULL; pos++)
+          ;
       node->child[pos] = child;
       node->childIndex[keyByte] = pos;
       node->count++;
@@ -626,7 +583,7 @@ class ART : public Competitor {
       // Grow to Node256
       Node256* newNode = new Node256();
       for (unsigned i = 0; i < 256; i++)
-        if (node->childIndex[i]!=48)
+        if (node->childIndex[i] != 48)
           newNode->child[i] = node->child[node->childIndex[i]];
       newNode->count = node->count;
       copyPrefix(node, newNode);
@@ -636,31 +593,24 @@ class ART : public Competitor {
     }
   }
 
-  void insertNode256(Node256* node,
-                     Node** nodeRef,
-                     uint8_t keyByte,
+  void insertNode256(Node256* node, Node** nodeRef, uint8_t keyByte,
                      Node* child) {
     // Insert leaf into inner node
     node->count++;
     node->child[keyByte] = child;
   }
 
-// Forward references
-//  void eraseNode4(Node4* node, Node** nodeRef, Node** leafPlace);
-//  void eraseNode16(Node16* node, Node** nodeRef, Node** leafPlace);
-//  void eraseNode48(Node48* node, Node** nodeRef, uint8_t keyByte);
-//  void eraseNode256(Node256* node, Node** nodeRef, uint8_t keyByte);
+  // Forward references
+  //  void eraseNode4(Node4* node, Node** nodeRef, Node** leafPlace);
+  //  void eraseNode16(Node16* node, Node** nodeRef, Node** leafPlace);
+  //  void eraseNode48(Node48* node, Node** nodeRef, uint8_t keyByte);
+  //  void eraseNode256(Node256* node, Node** nodeRef, uint8_t keyByte);
 
-  void erase(Node* node,
-             Node** nodeRef,
-             uint8_t key[],
-             unsigned keyLength,
-             unsigned depth,
-             unsigned maxKeyLength) {
+  void erase(Node* node, Node** nodeRef, uint8_t key[], unsigned keyLength,
+             unsigned depth, unsigned maxKeyLength) {
     // Delete a leaf from a tree
 
-    if (!node)
-      return;
+    if (!node) return;
 
     if (isLeaf(node)) {
       // Make sure we have the right leaf
@@ -671,36 +621,31 @@ class ART : public Competitor {
 
     // Handle prefix
     if (node->prefixLength) {
-      if (prefixMismatch(node, key, depth, maxKeyLength)!=node->prefixLength)
+      if (prefixMismatch(node, key, depth, maxKeyLength) != node->prefixLength)
         return;
       depth += node->prefixLength;
     }
 
     Node** child = findChild(node, key[depth]);
-    if (isLeaf(*child)
-        && leafMatches(*child, key, keyLength, depth, maxKeyLength)) {
+    if (isLeaf(*child) &&
+        leafMatches(*child, key, keyLength, depth, maxKeyLength)) {
       // Leaf found, delete it in inner node
       switch (node->type) {
-        case NodeType4: eraseNode4(static_cast<Node4*>(node), nodeRef, child);
+        case NodeType4:
+          eraseNode4(static_cast<Node4*>(node), nodeRef, child);
           break;
         case NodeType16:
-          eraseNode16(static_cast<Node16*>(node),
-                      nodeRef,
-                      child);
+          eraseNode16(static_cast<Node16*>(node), nodeRef, child);
           break;
         case NodeType48:
-          eraseNode48(static_cast<Node48*>(node),
-                      nodeRef,
-                      key[depth]);
+          eraseNode48(static_cast<Node48*>(node), nodeRef, key[depth]);
           break;
         case NodeType256:
-          eraseNode256(static_cast<Node256*>(node),
-                       nodeRef,
-                       key[depth]);
+          eraseNode256(static_cast<Node256*>(node), nodeRef, key[depth]);
           break;
       }
     } else {
-      //Recurse
+      // Recurse
       erase(*child, child, key, keyLength, depth + 1, maxKeyLength);
     }
   }
@@ -709,12 +654,11 @@ class ART : public Competitor {
     // Delete leaf from inner node
     unsigned pos = leafPlace - node->child;
     memmove(node->key + pos, node->key + pos + 1, node->count - pos - 1);
-    memmove(node->child + pos,
-            node->child + pos + 1,
-            (node->count - pos - 1)*sizeof(uintptr_t));
+    memmove(node->child + pos, node->child + pos + 1,
+            (node->count - pos - 1) * sizeof(uintptr_t));
     node->count--;
 
-    if (node->count==1) {
+    if (node->count == 1) {
       // Get rid of one-way node
       Node* child = node->child[0];
       if (!isLeaf(child)) {
@@ -742,19 +686,17 @@ class ART : public Competitor {
     // Delete leaf from inner node
     unsigned pos = leafPlace - node->child;
     memmove(node->key + pos, node->key + pos + 1, node->count - pos - 1);
-    memmove(node->child + pos,
-            node->child + pos + 1,
-            (node->count - pos - 1)*sizeof(uintptr_t));
+    memmove(node->child + pos, node->child + pos + 1,
+            (node->count - pos - 1) * sizeof(uintptr_t));
     node->count--;
 
-    if (node->count==3) {
+    if (node->count == 3) {
       // Shrink to Node4
       Node4* newNode = new Node4();
       newNode->count = node->count;
       copyPrefix(node, newNode);
-      for (unsigned i = 0; i < 4; i++)
-        newNode->key[i] = flipSign(node->key[i]);
-      memcpy(newNode->child, node->child, sizeof(uintptr_t)*4);
+      for (unsigned i = 0; i < 4; i++) newNode->key[i] = flipSign(node->key[i]);
+      memcpy(newNode->child, node->child, sizeof(uintptr_t) * 4);
       *nodeRef = newNode;
       delete node;
     }
@@ -766,13 +708,13 @@ class ART : public Competitor {
     node->childIndex[keyByte] = emptyMarker;
     node->count--;
 
-    if (node->count==12) {
+    if (node->count == 12) {
       // Shrink to Node16
       Node16* newNode = new Node16();
       *nodeRef = newNode;
       copyPrefix(node, newNode);
       for (unsigned b = 0; b < 256; b++) {
-        if (node->childIndex[b]!=emptyMarker) {
+        if (node->childIndex[b] != emptyMarker) {
           newNode->key[newNode->count] = flipSign(b);
           newNode->child[newNode->count] = node->child[node->childIndex[b]];
           newNode->count++;
@@ -787,7 +729,7 @@ class ART : public Competitor {
     node->child[keyByte] = NULL;
     node->count--;
 
-    if (node->count==37) {
+    if (node->count == 37) {
       // Shrink to Node48
       Node48* newNode = new Node48();
       *nodeRef = newNode;
@@ -803,12 +745,12 @@ class ART : public Competitor {
     }
   }
 
-  void destructTree(Node *node) {
+  void destructTree(Node* node) {
     if (!node) return;
 
     switch (node->type) {
       case NodeType4: {
-        auto n4 = static_cast<Node4 *>(node);
+        auto n4 = static_cast<Node4*>(node);
         for (auto i = 0; i < node->count; i++) {
           if (!isLeaf(n4->child[i])) {
             destructTree(n4->child[i]);
@@ -818,7 +760,7 @@ class ART : public Competitor {
         break;
       }
       case NodeType16: {
-        auto n16 = static_cast<Node16 *>(node);
+        auto n16 = static_cast<Node16*>(node);
         for (auto i = 0; i < node->count; i++) {
           if (!isLeaf(n16->child[i])) {
             destructTree(n16->child[i]);
@@ -828,9 +770,10 @@ class ART : public Competitor {
         break;
       }
       case NodeType48: {
-        auto n48 = static_cast<Node48 *>(node);
+        auto n48 = static_cast<Node48*>(node);
         for (auto i = 0; i < 256; i++) {
-          if (n48->childIndex[i] != emptyMarker && !isLeaf(n48->child[n48->childIndex[i]])) {
+          if (n48->childIndex[i] != emptyMarker &&
+              !isLeaf(n48->child[n48->childIndex[i]])) {
             destructTree(n48->child[n48->childIndex[i]]);
           }
         }
@@ -838,7 +781,7 @@ class ART : public Competitor {
         break;
       }
       case NodeType256: {
-        auto n256 = static_cast<Node256 *>(node);
+        auto n256 = static_cast<Node256*>(node);
         for (auto i = 0; i < 256; i++) {
           if (n256->child[i] != nullptr && !isLeaf(n256->child[i])) {
             destructTree(n256->child[i]);

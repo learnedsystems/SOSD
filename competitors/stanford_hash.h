@@ -1,15 +1,13 @@
-
-
-
 #pragma once
 
 #include "base.h"
 
-
 // This is a slightly modified version of
 // hashing.cc from the Stanford FutureData index baselines repo.
-// Original copyright:  Copyright (c) 2017-present Peter Bailis, Kai Sheng Tai, Pratiksha Thaker, Matei Zaharia
-// MIT License
+// Original copyright:  Copyright (c) 2017-present Peter Bailis, Kai Sheng Tai,
+// Pratiksha Thaker, Matei Zaharia MIT License
+
+#include <immintrin.h>
 
 #include <algorithm>
 #include <cassert>
@@ -18,13 +16,13 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
-#include <immintrin.h>
 #include <random>
 #include <vector>
 
-const uint32_t INVALID_KEY = 0xffffffff;     // An unusable key we'll treat as a sentinel value
-const uint32_t BUCKET_SIZE = 8;              // Bucket size for cuckoo hash
-const double LOAD_FACTOR = 0.99;             // Load factor used for hash tables
+const uint32_t INVALID_KEY =
+    0xffffffff;  // An unusable key we'll treat as a sentinel value
+const uint32_t BUCKET_SIZE = 8;   // Bucket size for cuckoo hash
+const double LOAD_FACTOR = 0.99;  // Load factor used for hash tables
 
 // Finalization step of Murmur3 hash
 uint32_t hash32(uint32_t value) {
@@ -38,34 +36,35 @@ uint32_t hash32(uint32_t value) {
 
 // Fast alternative to modulo from Daniel Lemire
 uint32_t alt_mod(uint32_t x, uint32_t n) {
-  return ((uint64_t) x * (uint64_t) n) >> 32 ;
+  return ((uint64_t)x * (uint64_t)n) >> 32;
 }
 
 // A bucketed cuckoo hash map with keys of type uint32_t and values of type V
 template <typename V>
 class CuckooHashMap {
-public:
+ public:
   struct SearchResult {
     bool found;
     V value;
   };
 
-private:
+ private:
   struct Bucket {
     uint32_t keys[BUCKET_SIZE] __attribute__((aligned(32)));
     V values[BUCKET_SIZE];
   };
 
-  Bucket *buckets_;
+  Bucket* buckets_;
   uint32_t num_buckets_;  // Total number of buckets
   uint32_t size_;         // Number of entries filled
-  std::mt19937 rand_;          // RNG for moving items around
+  std::mt19937 rand_;     // RNG for moving items around
   V uninitialized_value_;
 
-public:
-  CuckooHashMap(uint32_t capacity): size_(0) {
+ public:
+  CuckooHashMap(uint32_t capacity) : size_(0) {
     num_buckets_ = (capacity + BUCKET_SIZE - 1) / BUCKET_SIZE;
-    int r = posix_memalign((void **) &buckets_, 32, num_buckets_ * sizeof(Bucket));
+    int r =
+        posix_memalign((void**)&buckets_, 32, num_buckets_ * sizeof(Bucket));
     if (r != 0) util::fail("could not memalign in cuckoo hash map");
     for (uint32_t i = 0; i < num_buckets_; i++) {
       for (size_t j = 0; j < BUCKET_SIZE; j++) {
@@ -74,54 +73,46 @@ public:
     }
   }
 
-  ~CuckooHashMap() {
-    free(buckets_);
-  }
+  ~CuckooHashMap() { free(buckets_); }
 
   SearchResult get(uint32_t key) const {
     uint32_t hash = hash32(key);
     uint32_t i1 = alt_mod(hash, num_buckets_);
-    Bucket *b1 = &buckets_[i1];
+    Bucket* b1 = &buckets_[i1];
 
     __m256i vkey = _mm256_set1_epi32(key);
-    __m256i vbucket = _mm256_load_si256((const __m256i *) &b1->keys);
+    __m256i vbucket = _mm256_load_si256((const __m256i*)&b1->keys);
     __m256i cmp = _mm256_cmpeq_epi32(vkey, vbucket);
     int mask = _mm256_movemask_epi8(cmp);
     if (mask != 0) {
       int index = __builtin_ctz(mask) / 4;
-      return { true, b1->values[index] };
+      return {true, b1->values[index]};
     }
 
     uint32_t i2 = alt_mod(hash32(key ^ hash), num_buckets_);
     if (i2 == i1) {
       i2 = (i1 == num_buckets_ - 1) ? 0 : i1 + 1;
     }
-    Bucket *b2 = &buckets_[i2];
+    Bucket* b2 = &buckets_[i2];
 
-    vbucket = _mm256_load_si256((const __m256i *) &b2->keys);
+    vbucket = _mm256_load_si256((const __m256i*)&b2->keys);
     cmp = _mm256_cmpeq_epi32(vkey, vbucket);
     mask = _mm256_movemask_epi8(cmp);
     if (mask != 0) {
       int index = __builtin_ctz(mask) / 4;
-      return { true, b2->values[index] };
+      return {true, b2->values[index]};
     }
 
-    return { false, uninitialized_value_ };
+    return {false, uninitialized_value_};
   }
 
-  void insert(uint32_t key, V value) {
-    insert(key, value, false);
-  }
+  void insert(uint32_t key, V value) { insert(key, value, false); }
 
-  uint32_t size() {
-    return size_;
-  }
+  uint32_t size() { return size_; }
 
-  uint64_t size_bytes() const {
-    return num_buckets_ * sizeof(Bucket);
-  }
+  uint64_t size_bytes() const { return num_buckets_ * sizeof(Bucket); }
 
-private:
+ private:
   // Insert a key into the table if it's not already inside it;
   // if this is a re-insert, we won't increase the size_ field.
   void insert(uint32_t key, V value, bool is_reinsert) {
@@ -132,12 +123,12 @@ private:
       i2 = (i1 == num_buckets_ - 1) ? 0 : i1 + 1;
     }
 
-    Bucket *b1 = &buckets_[i1];
-    Bucket *b2 = &buckets_[i2];
+    Bucket* b1 = &buckets_[i1];
+    Bucket* b2 = &buckets_[i2];
 
     // Update old value if the key is already in the table
     __m256i vkey = _mm256_set1_epi32(key);
-    __m256i vbucket = _mm256_load_si256((const __m256i *) &b1->keys);
+    __m256i vbucket = _mm256_load_si256((const __m256i*)&b1->keys);
     __m256i cmp = _mm256_cmpeq_epi32(vkey, vbucket);
     int mask = _mm256_movemask_epi8(cmp);
     if (mask != 0) {
@@ -146,7 +137,7 @@ private:
       return;
     }
 
-    vbucket = _mm256_load_si256((const __m256i *) &b2->keys);
+    vbucket = _mm256_load_si256((const __m256i*)&b2->keys);
     cmp = _mm256_cmpeq_epi32(vkey, vbucket);
     mask = _mm256_movemask_epi8(cmp);
     if (mask != 0) {
@@ -181,7 +172,7 @@ private:
       assert(count1 == BUCKET_SIZE);
       assert(count2 == BUCKET_SIZE);
 
-      Bucket *victim_bucket = b1;
+      Bucket* victim_bucket = b1;
       if (rand_() % 2 == 0) {
         victim_bucket = b2;
       }
@@ -197,10 +188,9 @@ private:
 
 // Back to SOSD code...
 class CuckooHash : public Competitor {
-public:
+ public:
+  CuckooHash() : map_(CuckooHashMap<uint32_t>(uint32_t(202000000))) {}
 
-  CuckooHash() : map_(CuckooHashMap<uint32_t>(uint32_t(202000000))) { }
-  
   uint64_t Build(const std::vector<KeyValue<uint32_t>>& data) {
     return util::timing([&] {
       for (auto& itm : data) {
@@ -213,19 +203,13 @@ public:
     auto result = map_.get(lookup_key);
     if (!result.found) util::fail("Could not find key in hashmap");
     uint32_t value = result.value;
-    return (SearchBound){ value, value + 1 };
+    return (SearchBound){value, value + 1};
   }
 
-  std::string name() const {
-    return "CuckooMap";
-  }
+  std::string name() const { return "CuckooMap"; }
 
-  std::size_t size() const {
-    return map_.size_bytes();
-  }
+  std::size_t size() const { return map_.size_bytes(); }
 
-private:
+ private:
   CuckooHashMap<uint32_t> map_;
 };
-
-

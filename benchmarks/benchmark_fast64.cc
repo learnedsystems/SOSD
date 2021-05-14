@@ -1,11 +1,13 @@
-#include "common.h"
-#include "benchmark.h"
 #include "benchmarks/benchmark_fast64.h"
-#include "competitors/fast64_search.h"
-#include "competitors/fast.h"
 
-template<template<typename> typename Searcher>
-void benchmark_32_fast(sosd::Benchmark<uint32_t, Searcher>& benchmark, bool pareto) {
+#include "benchmark.h"
+#include "common.h"
+#include "competitors/fast.h"
+#include "competitors/fast64_search.h"
+
+template <template <typename> typename Searcher>
+void benchmark_32_fast(sosd::Benchmark<uint32_t, Searcher>& benchmark,
+                       bool pareto) {
   benchmark.template Run<FAST32<1>>();
   if (pareto) {
     benchmark.template Run<FAST32<16>>();
@@ -20,11 +22,11 @@ void benchmark_32_fast(sosd::Benchmark<uint32_t, Searcher>& benchmark, bool pare
       benchmark.template Run<FAST32<8192>>();
     }
   }
-
 }
 
-template<template<typename> typename Searcher>
-void benchmark_64_fast(sosd::Benchmark<uint64_t, Searcher>& benchmark, bool pareto) {
+template <template <typename> typename Searcher>
+void benchmark_64_fast(sosd::Benchmark<uint64_t, Searcher>& benchmark,
+                       bool pareto) {
   benchmark.template Run<FAST64<1>>();
   if (pareto) {
     benchmark.template Run<FAST64<16>>();
