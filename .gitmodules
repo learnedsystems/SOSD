@@ -19,3 +19,6 @@
 [submodule "competitors/ALEX"]
 	path = competitors/ALEX
 	url = https://github.com/microsoft/ALEX.git
+[submodule "competitors/CHT"]
+	path = competitors/CHT
+	url = https://github.com/stoianmihail/CHT.git
