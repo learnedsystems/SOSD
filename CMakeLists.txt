@@ -58,10 +58,11 @@ endif ()
 
 add_executable(benchmark benchmark.cc ${SOURCE_FILES} ${RMI_SOURCES} ${BENCH_SOURCES})
 target_include_directories(benchmark
-        PRIVATE "competitors/stx-btree-0.9/include"
+        PRIVATE "competitors/CHT/include"
         PRIVATE "competitors/FST/include"
         PRIVATE "competitors/PGM-index/include"
         PRIVATE "competitors/rs/include"
+        PRIVATE "competitors/stx-btree-0.9/include"
         PRIVATE "fast64")
 add_dependencies(benchmark libfast64)
 
