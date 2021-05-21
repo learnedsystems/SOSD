@@ -41,56 +41,38 @@ class CHT : public Competitor {
     dataset.erase(dataset.begin(),
                   dataset.begin() + dataset.find(prefix) + strlen(prefix));
 
-    if (dataset != "books_200M_uint64" && dataset != "fb_200M_uint64" &&
-        dataset != "osm_cellids_200M_uint64") {
-      return false;
-    }
-
     // Set parameters based on the dataset.
-    SetParameters(dataset);
-
-    return true;
+    return SetParameters(dataset);
   }
 
   int variant() const { return size_scale; }
 
  private:
-  // Returns <num_bins, max_error>.
-  std::pair<size_t, size_t> GetConfig(const std::string& dataset) {
+  bool SetParameters(const std::string& dataset) {
     assert(size_scale >= 1 && size_scale <= 10);
 
-    using Configs = const std::vector<std::pair<size_t, size_t>>;
+    using Config = std::pair<size_t, size_t>;
+    std::vector<Config> configs;
 
     if (dataset == "books_200M_uint64") {
-      Configs configs = {{128, 512}, {128, 512}, {128, 512}, {128, 512},
-                         {16, 512},  {256, 128}, {64, 64},   {512, 32},
-                         {128, 16},  {1024, 16}};
-      return configs[10 - size_scale];
+      configs = {{128, 512}, {128, 512}, {128, 512}, {128, 512}, {16, 512},
+                 {256, 128}, {64, 64},   {512, 32},  {128, 16},  {1024, 16}};
+    } else if (dataset == "fb_200M_uint64") {
+      configs = {{64, 1024},  {64, 1024}, {64, 1024}, {64, 1024}, {256, 1024},
+                 {1024, 512}, {64, 128},  {512, 128}, {256, 64},  {256, 32}};
+    } else if (dataset == "osm_cellids_200M_uint64") {
+      configs = {{32, 1024}, {32, 1024}, {32, 1024}, {32, 1024}, {32, 512},
+                 {64, 256},  {64, 128},  {64, 32},   {64, 16},   {1024, 8}};
+    } else {
+      // No config.
+      return false;
     }
 
-    if (dataset == "fb_200M_uint64") {
-      Configs configs = {{64, 1024},  {64, 1024},  {64, 1024}, {64, 1024},
-                         {256, 1024}, {1024, 512}, {64, 128},  {512, 128},
-                         {256, 64},   {256, 32}};
-      return configs[10 - size_scale];
-    }
-
-    if (dataset == "osm_cellids_200M_uint64") {
-      Configs configs = {{32, 1024}, {32, 1024}, {32, 1024}, {32, 1024},
-                         {32, 512},  {64, 256},  {64, 128},  {64, 32},
-                         {64, 16},   {1024, 8}};
-      return configs[10 - size_scale];
-    }
-
-    std::cerr << "No tuning config for this dataset" << std::endl;
-    throw;
-  }
-
-  void SetParameters(const std::string& dataset) {
-    const std::pair<size_t, size_t> config = GetConfig(dataset);
+    const Config config = configs[size_scale - 1];
     num_bins_ = config.first;
     max_error_ = config.second;
     parameters_set_ = true;
+    return true;
   }
 
   cht::CompactHistTree<KeyType> cht_;
