@@ -115,7 +115,7 @@ class RS : public Competitor {
       return false;
     }
 
-    const Config config = configs[size_scale];
+    const Config config = configs[size_scale - 1];
     num_radix_bits_ = config.first;
     max_error_ = config.second;
     parameters_set_ = true;
