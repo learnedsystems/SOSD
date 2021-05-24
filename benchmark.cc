@@ -13,6 +13,7 @@
 #include "benchmarks/benchmark_rbs.h"
 #include "benchmarks/benchmark_rmi.h"
 #include "benchmarks/benchmark_rs.h"
+#include "benchmarks/benchmark_ts.h"
 #include "benchmarks/benchmark_wormhole.h"
 #include "competitors/binary_search.h"
 #include "competitors/hash.h"
@@ -49,6 +50,7 @@ void execute_32_bit(Benchmark benchmark, bool pareto, bool only_mode,
   // Build and probe individual indexes.
   check_only("RMI", benchmark_32_rmi(benchmark, pareto, filename));
   check_only("RS", benchmark_32_rs(benchmark, pareto));
+  check_only("TS", benchmark_32_ts(benchmark, pareto));
   check_only("PGM", benchmark_32_pgm(benchmark, pareto));
   check_only("CHT", benchmark_32_cht(benchmark, pareto));
   check_only("BTree", benchmark_32_btree(benchmark, pareto));
@@ -76,6 +78,7 @@ void execute_64_bit(Benchmark benchmark, bool pareto, bool only_mode,
   // Build and probe individual indexes.
   check_only("RMI", benchmark_64_rmi(benchmark, pareto, filename));
   check_only("RS", benchmark_64_rs(benchmark, pareto));
+  check_only("TS", benchmark_64_ts(benchmark, pareto));
   check_only("PGM", benchmark_64_pgm(benchmark, pareto));
   check_only("CHT", benchmark_64_cht(benchmark, pareto));
   check_only("ART", benchmark_64_art(benchmark, pareto));

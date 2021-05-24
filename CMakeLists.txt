@@ -63,6 +63,7 @@ target_include_directories(benchmark
         PRIVATE "competitors/PGM-index/include"
         PRIVATE "competitors/rs/include"
         PRIVATE "competitors/stx-btree-0.9/include"
+        PRIVATE "competitors/ts/include"
         PRIVATE "fast64")
 add_dependencies(benchmark libfast64)
 

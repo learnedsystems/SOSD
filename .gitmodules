@@ -22,3 +22,6 @@
 [submodule "competitors/CHT"]
 	path = competitors/CHT
 	url = https://github.com/stoianmihail/CHT.git
+[submodule "competitors/ts"]
+	path = competitors/ts
+	url = https://github.com/stoianmihail/TrieSpline.git
