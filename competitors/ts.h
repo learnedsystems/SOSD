@@ -19,7 +19,8 @@ class TS : public Competitor {
         max = data.back().key;
       }
       ts::Builder<KeyType> tsb(min, max, config_.spline_max_error,
-                               config_.num_bins, config_.tree_max_error);
+                               config_.num_bins, config_.tree_max_error,
+                               /*single_pass=*/false, /*use_cache=*/false);
       for (const auto& key_and_value : data) tsb.AddKey(key_and_value.key);
       ts_ = tsb.Finalize();
     });
@@ -54,8 +55,7 @@ class TS : public Competitor {
     size_t tree_max_error;
   };
 
-  bool
-  SetParameters(const std::string& dataset) {
+  bool SetParameters(const std::string& dataset) {
     assert(size_scale >= 1 && size_scale <= 10);
     std::vector<TSConfig> configs;
 
