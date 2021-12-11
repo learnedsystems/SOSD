@@ -80,6 +80,7 @@ class CuckooHashMap {
     uint32_t i1 = alt_mod(hash, num_buckets_);
     Bucket* b1 = &buckets_[i1];
 
+#ifdef __AVX__
     __m256i vkey = _mm256_set1_epi32(key);
     __m256i vbucket = _mm256_load_si256((const __m256i*)&b1->keys);
     __m256i cmp = _mm256_cmpeq_epi32(vkey, vbucket);
@@ -88,6 +89,11 @@ class CuckooHashMap {
       int index = __builtin_ctz(mask) / 4;
       return {true, b1->values[index]};
     }
+#else
+    for (size_t i = 0; i < BUCKET_SIZE; i++)
+      if (b1->keys[i] == key)
+        return {true, b1->values[i]};
+#endif
 
     uint32_t i2 = alt_mod(hash32(key ^ hash), num_buckets_);
     if (i2 == i1) {
@@ -95,6 +101,7 @@ class CuckooHashMap {
     }
     Bucket* b2 = &buckets_[i2];
 
+#ifdef __AVX__
     vbucket = _mm256_load_si256((const __m256i*)&b2->keys);
     cmp = _mm256_cmpeq_epi32(vkey, vbucket);
     mask = _mm256_movemask_epi8(cmp);
@@ -102,6 +109,11 @@ class CuckooHashMap {
       int index = __builtin_ctz(mask) / 4;
       return {true, b2->values[index]};
     }
+#else
+    for (size_t i = 0; i < BUCKET_SIZE; i++)
+      if (b2->keys[i] == key)
+        return {true, b2->values[i]};
+#endif
 
     return {false, uninitialized_value_};
   }
@@ -127,6 +139,7 @@ class CuckooHashMap {
     Bucket* b2 = &buckets_[i2];
 
     // Update old value if the key is already in the table
+#ifdef __AVX__
     __m256i vkey = _mm256_set1_epi32(key);
     __m256i vbucket = _mm256_load_si256((const __m256i*)&b1->keys);
     __m256i cmp = _mm256_cmpeq_epi32(vkey, vbucket);
@@ -136,7 +149,16 @@ class CuckooHashMap {
       b1->values[index] = value;
       return;
     }
+#else
+    for (size_t i = 0; i < BUCKET_SIZE; i++) {
+      if (b1->keys[i] == key) {
+        b1->values[i] = value;
+        return;
+      }
+    }
+#endif
 
+#ifdef __AVX__
     vbucket = _mm256_load_si256((const __m256i*)&b2->keys);
     cmp = _mm256_cmpeq_epi32(vkey, vbucket);
     mask = _mm256_movemask_epi8(cmp);
@@ -145,6 +167,14 @@ class CuckooHashMap {
       b2->values[index] = value;
       return;
     }
+#else
+    for (size_t i = 0; i < BUCKET_SIZE; i++) {
+      if (b2->keys[i] == key) {
+        b2->values[i] = value;
+        return;
+      }
+    }
+#endif
 
     if (!is_reinsert) {
       size_++;
