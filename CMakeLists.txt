@@ -5,11 +5,14 @@ if(UNIX AND NOT APPLE)
     set(LINUX TRUE)
 endif()
 
-if (${LINUX})
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math -Wall -Wfatal-errors -march=native -fopenmp")
-else ()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math -Wall -Wfatal-errors -march=native")
-endif ()
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math -Wall -Wfatal-errors -march=native")
+
+# Enable OpenMP if available
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag(-fopenmp HAS_OPENMP)
+if (HAS_OPENMP)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+endif()
 
 set(CMAKE_CXX_STANDARD 17)
 
