@@ -18,9 +18,7 @@ class TS : public Competitor {
         min = data.front().key;
         max = data.back().key;
       }
-      ts::Builder<KeyType> tsb(min, max, config_.spline_max_error,
-                               config_.num_bins, config_.tree_max_error,
-                               /*single_pass=*/false, /*use_cache=*/false);
+      ts::Builder<KeyType> tsb(min, max, spline_max_error_);
       for (const auto& key_and_value : data) tsb.AddKey(key_and_value.key);
       ts_ = tsb.Finalize();
     });
@@ -49,44 +47,29 @@ class TS : public Competitor {
   int variant() const { return size_scale; }
 
  private:
-  struct TSConfig {
-    size_t spline_max_error;
-    size_t num_bins;
-    size_t tree_max_error;
-  };
-
   bool SetParameters(const std::string& dataset) {
     assert(size_scale >= 1 && size_scale <= 10);
-    std::vector<TSConfig> configs;
+    std::vector<size_t> configs;
 
     if (dataset == "books_200M_uint64") {
-      configs = {{512, 128, 2},  {256, 256, 2},  {128, 256, 16}, {64, 1024, 4},
-                 {32, 1024, 16}, {16, 1024, 16}, {16, 1024, 8},  {4, 256, 8},
-                 {2, 512, 8},    {2, 1024, 8}};
+      configs = {500, 200, 150, 60, 50, 25, 25, 4, 2, 1};
     } else if (dataset == "fb_200M_uint64") {
-      configs = {{1024, 1024, 16}, {1024, 1024, 16}, {1024, 512, 8},
-                 {256, 512, 8},    {128, 512, 8},    {16, 128, 16},
-                 {16, 1024, 16},   {8, 1024, 16},    {4, 256, 16},
-                 {2, 256, 16}};
+      configs = {225, 225, 225, 225, 100, 32, 16, 8, 8, 2};
     } else if (dataset == "osm_cellids_200M_uint64") {
-      configs = {{1024, 32, 16}, {1024, 32, 16}, {512, 32, 16}, {128, 128, 16},
-                 {64, 128, 16},  {16, 64, 16},   {8, 32, 16},   {8, 256, 16},
-                 {2, 256, 16},   {2, 512, 16}};
+      configs = {150, 150, 150, 150, 80, 25, 8, 8, 4, 1};
     } else if (dataset == "wiki_ts_200M_uint64") {
-      configs = {{1024, 128, 4}, {128, 128, 8}, {64, 256, 8}, {32, 1024, 8},
-                 {16, 1024, 8},  {16, 1024, 4}, {4, 128, 16}, {8, 128, 2},
-                 {2, 512, 8},    {2, 128, 2}};
+      configs = {175, 175, 90, 32, 25, 16, 16, 4, 2, 1};
     } else {
       // No config.
       return false;
     }
 
-    config_ = configs[size_scale - 1];
+    spline_max_error_ = configs[size_scale - 1];
     parameters_set_ = true;
     return true;
   }
 
   ts::TrieSpline<KeyType> ts_;
-  TSConfig config_;
+  size_t spline_max_error_;
   bool parameters_set_ = false;
 };
