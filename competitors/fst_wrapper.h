@@ -53,20 +53,14 @@ class FST : public Competitor {
       key = std::string(reinterpret_cast<const char*>(&endian_swapped_word), 4);
     }
 
-    uint64_t guess;
+    uint64_t guess = 0;
     if (lookup_key >= max_key_) {
       // looking up a value greater than the largest value causes a segfault...
       return (SearchBound){max_val_, data_size_};
       std::cout << max_val_ << "!!!" << std::endl;
     } else {
-      auto iter = fst_->moveToKeyGreaterThan(key, true);
-
-      // sometimes we get back a bad iterator even though
-      // we shouldn't...
-      if (!iter.isValid()) return (SearchBound){0, data_size_};
-
-      // multiply by size_scale here because getValue() returns an index
-      guess = iter.getValue() * size_scale;
+      if (!fst_->lookupKey(key, guess)) return {0, data_size_};
+      guess *= size_scale;
     }
 
     // expanding by error in both directions is faster than
