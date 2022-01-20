@@ -5,7 +5,7 @@
 #include "./FST/include/fst.hpp"
 #include "base.h"
 
-template <class KeyType, int size_scale>
+template <class KeyType, int size_scale, bool turbomode = false>
 class FST : public Competitor {
  public:
   // assume that keys are unique and sorted in ascending order
@@ -58,9 +58,21 @@ class FST : public Competitor {
       // looking up a value greater than the largest value causes a segfault...
       return (SearchBound){max_val_, data_size_};
       std::cout << max_val_ << "!!!" << std::endl;
-    } else {
-      if (!fst_->lookupKey(key, guess)) return {0, data_size_};
+    }
+
+    // faster codepath on size_scale == 1
+    if constexpr (turbomode /*&& size_scale == 1*/) {
+      fst_->lookupKey(key, guess);
       guess *= size_scale;
+    } else {
+      auto iter = fst_->moveToKeyGreaterThan(key, true);
+
+      // sometimes we get back a bad iterator even though
+      // we shouldn't...
+      if (!iter.isValid()) return (SearchBound){0, data_size_};
+
+      // multiply by size_scale here because getValue() returns an index
+      guess = iter.getValue() * size_scale;
     }
 
     // expanding by error in both directions is faster than
@@ -78,7 +90,7 @@ class FST : public Competitor {
     return (SearchBound){start, stop};
   }
 
-  std::string name() const { return "FST"; }
+  std::string name() const { return std::string(turbomode ? "F" : "") + "FST"; }
 
   std::size_t size() const {
     // return used memory in bytes
@@ -90,7 +102,7 @@ class FST : public Competitor {
     return unique;
   }
 
-  int variant() const { return size_scale; }
+  int variant() const { return (turbomode ? -1 : 1) * size_scale; }
 
  private:
   std::unique_ptr<fst::FST> fst_;
