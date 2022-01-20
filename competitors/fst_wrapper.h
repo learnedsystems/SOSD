@@ -5,7 +5,7 @@
 #include "./FST/include/fst.hpp"
 #include "base.h"
 
-template <class KeyType, int size_scale, bool turbomode = false>
+template <class KeyType, int size_scale>
 class FST : public Competitor {
  public:
   // assume that keys are unique and sorted in ascending order
@@ -60,10 +60,10 @@ class FST : public Competitor {
       std::cout << max_val_ << "!!!" << std::endl;
     }
 
-    // faster codepath on size_scale == 1
-    if constexpr (turbomode /*&& size_scale == 1*/) {
+    // faster codepath on size_scale == 1 (static if evaluated at compile time)
+    if constexpr (size_scale == 1) {
       fst_->lookupKey(key, guess);
-      guess *= size_scale;
+      return {guess, guess};
     } else {
       auto iter = fst_->moveToKeyGreaterThan(key, true);
 
@@ -90,7 +90,7 @@ class FST : public Competitor {
     return (SearchBound){start, stop};
   }
 
-  std::string name() const { return std::string(turbomode ? "F" : "") + "FST"; }
+  std::string name() const { return "FST"; }
 
   std::size_t size() const {
     // return used memory in bytes
