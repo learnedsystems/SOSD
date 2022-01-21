@@ -7,7 +7,7 @@
 #include "base.h"
 
 // Alternate implementation of RMI as described by Maltry and Dittrich
-template <class KeyType, typename Layer1, typename Layer2, typename RMIType, size_t layer2_size, int variant>
+template <class KeyType, typename Layer1, typename Layer2, template <KeyType, Layer1, Layer2> typename RMIType, size_t layer2_size, int variant>
 class RMIAlternate : public Competitor {
  public:
   uint64_t Build(const std::vector<KeyValue<KeyType>>& data) {
