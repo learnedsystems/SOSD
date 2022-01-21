@@ -25,3 +25,6 @@
 [submodule "competitors/ts"]
 	path = competitors/ts
 	url = https://github.com/stoianmihail/TrieSpline.git
+[submodule "competitors/analysis-rmi"]
+	path = competitors/analysis-rmi
+	url = https://github.com/BigDataAnalyticsGroup/analysis-rmi.git
