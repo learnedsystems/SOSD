@@ -1,6 +1,4 @@
 #pragma once
-#include <string>
-
 #include "benchmark.h"
 
 template <template <typename> typename Searcher>

@@ -27,4 +27,4 @@
 	url = https://github.com/stoianmihail/TrieSpline.git
 [submodule "competitors/analysis-rmi"]
 	path = competitors/analysis-rmi
-	url = https://github.com/BigDataAnalyticsGroup/analysis-rmi.git
+	url = https://github.com/alhuan/analysis-rmi.git
