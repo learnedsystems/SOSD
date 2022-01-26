@@ -53,11 +53,17 @@ class FST : public Competitor {
       key = std::string(reinterpret_cast<const char*>(&endian_swapped_word), 4);
     }
 
-    uint64_t guess;
+    uint64_t guess = 0;
     if (lookup_key >= max_key_) {
       // looking up a value greater than the largest value causes a segfault...
       return (SearchBound){max_val_, data_size_};
       std::cout << max_val_ << "!!!" << std::endl;
+    }
+
+    // faster codepath on size_scale == 1 (static if evaluated at compile time)
+    if constexpr (size_scale == 1) {
+      fst_->lookupKey(key, guess);
+      return {guess, guess};
     } else {
       auto iter = fst_->moveToKeyGreaterThan(key, true);
 
@@ -96,7 +102,7 @@ class FST : public Competitor {
     return unique;
   }
 
-  int variant() const { return size_scale; }
+  int variant() const { return (turbomode ? -1 : 1) * size_scale; }
 
  private:
   std::unique_ptr<fst::FST> fst_;
