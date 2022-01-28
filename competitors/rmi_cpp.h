@@ -7,11 +7,11 @@
 #include "./analysis-rmi/include/rmi/rmi.hpp"
 #include "base.h"
 
-// Alternate implementation of RMI as described by Maltry and Dittrich
+// Alternate implementation of RMI in C++
 template <class KeyType, typename Layer1, typename Layer2,
           template <typename...> typename RMIType, size_t layer2_size,
           uint32_t variant_num>
-class RMIAlternate : public Competitor {
+class RMICpp : public Competitor {
  public:
   uint64_t Build(const std::vector<KeyValue<KeyType>>& data) {
     std::vector<KeyType> loading_data;
@@ -27,7 +27,7 @@ class RMIAlternate : public Competitor {
     });
   }
 
-  std::string name() const { return "RMIAlternate"; }
+  std::string name() const { return "RMICpp"; }
 
   std::size_t size() const { return rmi_->size_in_bytes(); }
 
