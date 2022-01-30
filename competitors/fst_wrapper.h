@@ -102,7 +102,7 @@ class FST : public Competitor {
     return unique;
   }
 
-  int variant() const { return (turbomode ? -1 : 1) * size_scale; }
+  int variant() const { return size_scale; }
 
  private:
   std::unique_ptr<fst::FST> fst_;
