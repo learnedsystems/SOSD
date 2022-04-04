@@ -48,21 +48,6 @@ class RMICppRobust : public Competitor {
     });
   }
 
-  uint64_t Build(const std::vector<KeyValue<KeyType>>& data, const std::string dataset_name) {
-    std::vector<KeyType> loading_data;
-    loading_data.reserve(data.size());
-    for (auto& itm : data) {
-      loading_data.push_back(itm.key);
-    }
-
-    return util::timing([&] {
-      auto new_rmi_ptr = std::make_unique<RMIType<KeyType, Layer1, Layer2>>(
-          loading_data, layer2_size, 0.0001);
-      rmi_ = std::move(new_rmi_ptr);
-      PrintSegmentInformation(loading_data, dataset_name);
-    });
-  }
-
   std::string name() const { return "RMICppRobust"; }
 
   std::size_t size() const { return rmi_->size_in_bytes(); }
@@ -73,24 +58,6 @@ class RMICppRobust : public Competitor {
   }
 
   int variant() const { return variant_num; }
-
-  void PrintSegmentInformation(const std::vector<KeyType>& data, std::string dataset_name) {
-    const std::string filename =
-        "./results/" + dataset_name + "_bin_info.csv";
-
-    std::ofstream fout(filename, std::ofstream::out | std::ofstream::app);
-
-    if (!fout.is_open()) {
-      std::cerr << "Failure to print CSV on " << filename << std::endl;
-      return;
-    }
-
-    fout << dataset_name;
-    for (auto &bin_size : rmi_->segments_per_bin(data, 10)) {
-      fout << "," << bin_size;
-    }
-    fout << std::endl;
-  }
 
  private:
   std::unique_ptr<RMIType<KeyType, Layer1, Layer2>> rmi_;
