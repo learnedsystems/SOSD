@@ -32,22 +32,17 @@ class RMICppRobust : public Competitor {
           loading_data, layer2_size, 0.005);
       auto rmi_ptr_five = std::make_unique<RMIType<KeyType, Layer1, Layer2>>(
           loading_data, layer2_size, 0);
-      std::cout << rmi_ptr_one->max_error() << std::endl;
-      std::cout << rmi_ptr_two->max_error() << std::endl;
-      std::cout << rmi_ptr_three->max_error() << std::endl;
-      std::cout << rmi_ptr_four->max_error() << std::endl;
-      std::cout << rmi_ptr_five->max_error() << std::endl;
       rmi_ = std::move(rmi_ptr_one);
-      if (rmi_ptr_two->max_error() < rmi_->max_error()) {
+      if (rmi_ptr_two->mean_error() < rmi_->mean_error()) {
         rmi_ = std::move(rmi_ptr_two);
       }
-      if (rmi_ptr_three->max_error() < rmi_->max_error()) {
+      if (rmi_ptr_three->mean_error() < rmi_->mean_error()) {
         rmi_ = std::move(rmi_ptr_three);
       }
-      if (rmi_ptr_four->max_error() < rmi_->max_error()) {
+      if (rmi_ptr_four->mean_error() < rmi_->mean_error()) {
         rmi_ = std::move(rmi_ptr_four);
       }
-      if (rmi_ptr_five->max_error() < rmi_->max_error()) {
+      if (rmi_ptr_five->mean_error() < rmi_->mean_error()) {
         rmi_ = std::move(rmi_ptr_five);
       }
     });

@@ -15,31 +15,31 @@ void benchmark_32_rmi_cpp(sosd::Benchmark<uint32_t, Searcher>& benchmark,
   if (pareto) {
     benchmark.template Run<
         RMICppRobust<uint32_t, rmi::LinearRegression, rmi::LinearRegression,
-                     rmi::RmiLAbsRobust, 256, 2>>();
+                     rmi::RmiLAbsRobust, 512, 2>>();
     benchmark.template Run<
         RMICppRobust<uint32_t, rmi::LinearRegression, rmi::LinearRegression,
-                     rmi::RmiLAbsRobust, 512, 3>>();
+                     rmi::RmiLAbsRobust, 2048, 3>>();
     benchmark.template Run<
         RMICppRobust<uint32_t, rmi::LinearRegression, rmi::LinearRegression,
-                     rmi::RmiLAbsRobust, 1024, 4>>();
+                     rmi::RmiLAbsRobust, 8192, 4>>();
     benchmark.template Run<
         RMICppRobust<uint32_t, rmi::LinearRegression, rmi::LinearRegression,
-                     rmi::RmiLAbsRobust, 2048, 5>>();
+                     rmi::RmiLAbsRobust, 32768, 5>>();
     benchmark.template Run<
         RMICppRobust<uint32_t, rmi::LinearRegression, rmi::LinearRegression,
-                     rmi::RmiLAbsRobust, 4096, 6>>();
+                     rmi::RmiLAbsRobust, 131072, 6>>();
     benchmark.template Run<
         RMICppRobust<uint32_t, rmi::LinearRegression, rmi::LinearRegression,
-                     rmi::RmiLAbsRobust, 8192, 7>>();
+                     rmi::RmiLAbsRobust, 524288, 7>>();
     benchmark.template Run<
         RMICppRobust<uint32_t, rmi::LinearRegression, rmi::LinearRegression,
-                     rmi::RmiLAbsRobust, 16384, 8>>();
+                     rmi::RmiLAbsRobust, 2097152, 8>>();
     benchmark.template Run<
         RMICppRobust<uint32_t, rmi::LinearRegression, rmi::LinearRegression,
-                     rmi::RmiLAbsRobust, 32768, 9>>();
+                     rmi::RmiLAbsRobust, 8388608, 9>>();
     benchmark.template Run<
         RMICppRobust<uint32_t, rmi::LinearRegression, rmi::LinearRegression,
-                     rmi::RmiLAbsRobust, 65536, 10>>();
+                     rmi::RmiLAbsRobust, 33554432, 10>>();
   }
 }
 
@@ -52,32 +52,32 @@ void benchmark_64_rmi_cpp(sosd::Benchmark<uint64_t, Searcher>& benchmark,
   if (pareto) {
     benchmark.template Run<
         RMICppRobust<uint64_t, rmi::LinearRegression, rmi::LinearRegression,
-                     rmi::RmiLAbsRobust, 256, 2>>();
+                     rmi::RmiLAbsRobust, 512, 2>>();
     benchmark.template Run<
         RMICppRobust<uint64_t, rmi::LinearRegression, rmi::LinearRegression,
-                     rmi::RmiLAbsRobust, 512, 3>>();
+                     rmi::RmiLAbsRobust, 2048, 3>>();
     benchmark.template Run<
         RMICppRobust<uint64_t, rmi::LinearRegression, rmi::LinearRegression,
-                     rmi::RmiLAbsRobust, 1024, 4>>();
+                     rmi::RmiLAbsRobust, 8192, 4>>();
     benchmark.template Run<
         RMICppRobust<uint64_t, rmi::LinearRegression, rmi::LinearRegression,
-                     rmi::RmiLAbsRobust, 2048, 5>>();
+                     rmi::RmiLAbsRobust, 32768, 5>>();
     benchmark.template Run<
         RMICppRobust<uint64_t, rmi::LinearRegression, rmi::LinearRegression,
-                     rmi::RmiLAbsRobust, 4096, 6>>();
+                     rmi::RmiLAbsRobust, 131072, 6>>();
     benchmark.template Run<
         RMICppRobust<uint64_t, rmi::LinearRegression, rmi::LinearRegression,
-                     rmi::RmiLAbsRobust, 8192, 7>>();
+                     rmi::RmiLAbsRobust, 524288, 7>>();
     benchmark.template Run<
         RMICppRobust<uint64_t, rmi::LinearRegression, rmi::LinearRegression,
-                     rmi::RmiLAbsRobust, 16384, 8>>();
+                     rmi::RmiLAbsRobust, 2097152, 8>>();
     benchmark.template Run<
         RMICppRobust<uint64_t, rmi::LinearRegression, rmi::LinearRegression,
-            rmi::RmiLAbsRobust, 32768, 9>>();
+                     rmi::RmiLAbsRobust, 8388608, 9>>();
     benchmark.template Run<
         RMICppRobust<uint64_t, rmi::LinearRegression, rmi::LinearRegression,
-            rmi::RmiLAbsRobust, 65536, 10>>();
-  }
+                     rmi::RmiLAbsRobust, 33554432, 10>>();
+  } 
 }
 
 INSTANTIATE_TEMPLATES(benchmark_32_rmi_cpp, uint32_t);
