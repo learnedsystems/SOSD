@@ -5,7 +5,6 @@
 
 #include "./analysis-rmi/include/rmi/models.hpp"
 #include "./analysis-rmi/include/rmi/rmi.hpp"
-#include "./analysis-rmi/include/rmi/builder.hpp"
 #include "base.h"
 
 // Alternate implementation of RMI in C++
