@@ -1,8 +1,8 @@
 #pragma once
 
+#include <fstream>
 #include <memory>
 #include <utility>
-#include <fstream>
 
 #include "./analysis-rmi/include/rmi/models.hpp"
 #include "./analysis-rmi/include/rmi/rmi_robust.hpp"
@@ -10,8 +10,8 @@
 
 // Alternate implementation of RMI in C++ with robust outlier compensation
 template <class KeyType, typename Layer1, typename Layer2,
-    template <typename...> typename RMIType, size_t layer2_size,
-    uint32_t variant_num>
+          template <typename...> typename RMIType, size_t layer2_size,
+          uint32_t variant_num>
 class RMICppRobust : public Competitor {
  public:
   uint64_t Build(const std::vector<KeyValue<KeyType>>& data) {
@@ -22,28 +22,29 @@ class RMICppRobust : public Competitor {
     }
 
     return util::timing([&] {
-      auto rmi_ptr_one = std::make_unique<RMIType<KeyType, Layer1, Layer2>>(
-          loading_data, layer2_size, 0.0001);
-      auto rmi_ptr_two = std::make_unique<RMIType<KeyType, Layer1, Layer2>>(
-          loading_data, layer2_size, 0.0005);
-      auto rmi_ptr_three = std::make_unique<RMIType<KeyType, Layer1, Layer2>>(
-          loading_data, layer2_size, 0.001);
-      auto rmi_ptr_four = std::make_unique<RMIType<KeyType, Layer1, Layer2>>(
-          loading_data, layer2_size, 0.005);
-      auto rmi_ptr_five = std::make_unique<RMIType<KeyType, Layer1, Layer2>>(
-          loading_data, layer2_size, 0);
-      rmi_ = std::move(rmi_ptr_one);
-      if (rmi_ptr_two->mean_error() < rmi_->mean_error()) {
+      rmi_ = std::make_unique<RMIType<KeyType, Layer1, Layer2>>(loading_data,
+                                                                layer2_size, 0);
+      if (auto rmi_ptr_one = std::make_unique<RMIType<KeyType, Layer1, Layer2>>(
+              loading_data, layer2_size, 0.0001);
+          rmi_ptr_one->mean_error() < rmi_->mean_error()) {
+        rmi_ = std::move(rmi_ptr_one);
+      }
+      if (auto rmi_ptr_two = std::make_unique<RMIType<KeyType, Layer1, Layer2>>(
+              loading_data, layer2_size, 0.0005);
+          rmi_ptr_two->mean_error() < rmi_->mean_error()) {
         rmi_ = std::move(rmi_ptr_two);
       }
-      if (rmi_ptr_three->mean_error() < rmi_->mean_error()) {
+      if (auto rmi_ptr_three =
+              std::make_unique<RMIType<KeyType, Layer1, Layer2>>(
+                  loading_data, layer2_size, 0.001);
+          rmi_ptr_three->mean_error() < rmi_->mean_error()) {
         rmi_ = std::move(rmi_ptr_three);
       }
-      if (rmi_ptr_four->mean_error() < rmi_->mean_error()) {
+      if (auto rmi_ptr_four =
+              std::make_unique<RMIType<KeyType, Layer1, Layer2>>(
+                  loading_data, layer2_size, 0.005);
+          rmi_ptr_four->mean_error() < rmi_->mean_error()) {
         rmi_ = std::move(rmi_ptr_four);
-      }
-      if (rmi_ptr_five->mean_error() < rmi_->mean_error()) {
-        rmi_ = std::move(rmi_ptr_five);
       }
     });
   }
