@@ -49,7 +49,7 @@ class RMICppRobust : public Competitor {
     });
   }
 
-  std::string name() const { return "RMICppRobust"; }
+  std::string name() const { return "RMI-Maltry-Heuristic"; }
 
   std::size_t size() const { return rmi_->size_in_bytes(); }
 
